@@ -1,26 +1,24 @@
-//var conn = new Connection({'host': host, 'port': port, 'keyspace': 'Keyspace1', 'cql_version': '2.0.0'});
-//var pool = new PooledConnection({'hosts': hosts, 'keyspace': 'Keyspace1', 'cql_version': '2.0.0'});
+cql = require('node-cassandra-cql');
+var client = new cql.Client({hosts: ['localhost'], keyspace: "testreducedb", username: "testreduce", password: ""});
 
-var Connection = require('cassandra-client').Connection;
-var con = new Connection({host:'cassandra-host', port:9160, keyspace: "testreducedb");
-con.connect(function(err, con) {
-  if (err) {
-    // Failed to establish connection.
-		console.log("Failed to establish connection BRANDO!");
-    throw err;
-  }
+client.connect( function(err, result) {
+	if (err){
+		console.log("connection failed");
+	} else {
+		console.log("connection succesful in the .connect() commands");
+	}
+}
+);
 
-/*
-	con.execute('UPDATE Standard1 SET ?=? WHERE key=?', ['cola', 'valuea', 'key0'], function(err) {
-      if (err) {
-          // handle error
-      } else {
-          // handle success.
-      }
-  });
-*/
-});
-
-
+client.execute('SELECT test FROM results', function(err, result) {
+    if (err){
+			console.log('execute failed');
+			console.log(err);
+			//throw err;
+		} else {
+			console.log('execute succesful');		
+		}
+}
+);
 
 
