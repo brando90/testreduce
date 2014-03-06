@@ -2,7 +2,7 @@ var options = {
                 hosts: [ 'localhost' ],
                 keyspace: 'testreducedb',
                 username: 'testreduce',
-                password: '',
+                password: 'testreduce',
                 poolSize: 1,
                 consistencies: { read: 'one', write: 'one' }
               };
