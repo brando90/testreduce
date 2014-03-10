@@ -6,6 +6,11 @@ var util = require('util'),
   PriorityQueue = require('priorityqueuejs'),
   async = require('async');
 
+function printDebug(debugMessage, arg){
+	console.log("---------------------------------------------------------");
+	console.log(debugMessage, arg);
+	console.log("---------------------------------------------------------");
+}
 
 // Constructor
 function CassandraBackend(name, config, callback) {
@@ -19,7 +24,6 @@ function CassandraBackend(name, config, callback) {
         read: consistencies[confConsistencies.read],
         write: consistencies[confConsistencies.write]
     };
-
     self.client = new cass.Client(config.backend.options);
 
     var reconnectCB = function(err) {
@@ -45,7 +49,7 @@ function CassandraBackend(name, config, callback) {
 
     // Load all the tests from Cassandra - do this when we see a new commit hash
     async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], function(err) {
-        if (err) {
+		if (err) {
             console.log( 'failure in setup', err );
         }
         console.log( 'in memory queue setup complete' );
@@ -61,17 +65,20 @@ function CassandraBackend(name, config, callback) {
 function getCommits(cb) {
     var queryCB = function (err, results) {
         if (err) {
+			console.log("getCommits threw an Error!");
             cb(err);
         } else if (!results || !results.rows) {
             console.log( 'no seen commits, error in database' );
             cb(null);
         } else {
+			printDebug("results from commits table query: ", results);
             for (var i = 0; i < results.rows.length; i++) {
                 var commit = results.rows[i];
                 // commits are currently saved as blobs, we shouldn't call toString on them...
                 // commit[0].toString()
                 this.commits.push( { hash: commit[0], timestamp: commit[1], isKeyframe: commit[2] } );
             }
+			printDebug("this commits", this.commits);			
             cb(null);
         }
     };
@@ -85,6 +92,7 @@ function getCommits(cb) {
 function getTests(cb) {
     var queryCB = function (err, results) {
         if (err) {
+			console.log("getTests threw an Error!");
             cb(err);
         } else if (!results || !results.rows) {
             console.log( 'no seen commits, error in database' );
@@ -108,7 +116,7 @@ function getTests(cb) {
 function initTestPQ(commitIndex, numTestsLeft, cb) {
     var queryCB = function (err, results) {
         if (err) {
-            console.log('in error init test PQ');
+            console.log('initTestPQ threw an Error');
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
             cb(null);
@@ -130,14 +138,21 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
         }
     };
 
+	console.log('------------');
+	console.log('this.commits array/dict/obj: ', this.commits);
+	console.log("commitIndex", commitIndex);
+	console.log('------------');
     var lastCommit = this.commits[commitIndex],
         lastHash = lastCommit && lastCommit.hash || '';
     if (!lastHash) {
         cb(null);
     }
     var cql = 'select test, score, commit from test_by_score where commit = ?';
-
-    this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
+	console.log("-------------------------------------")
+	console.log("cql query: ", cql);
+	console.log("lastCommit: ", lastCommit);
+	console.log("-------------------------------------\n");
+	this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
 }
 
 /**
@@ -315,6 +330,7 @@ CassandraBackend.prototype.getFails = function(offset, limit, cb) {
      */
     cb([]);
 }
+
 
 // Node.js module exports. This defines what
 // require('./CassandraBackend.js'); evaluates to.
