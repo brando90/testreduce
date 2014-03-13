@@ -20,6 +20,7 @@ function tidFromDate(date) {
 function CassandraBackend(name, config, callback) {
     var self = this;
 
+	//state for the CassandraBackend obj to detect when one of the tables is empty
 	this.emptyCommits = false;
 	this.emptyTests = false;
 	this.emptyTestPQ = false;
@@ -74,7 +75,8 @@ function getCommits(cb) {
             cb(err);
         } else if (!results || !results.rows || results.rows == 0) {
             console.log( 'no seen commits, error in database' );
-            cb(null);
+            this.emptyCommits = true;
+			cb(null);
         } else {
             for (var i = 0; i < results.rows.length; i++) {
                 var commit = results.rows[i];
@@ -103,7 +105,8 @@ function getTests(cb) {
             cb(err);
         } else if (!results || !results.rows || results.rows.length == 0) {
             console.log( 'no seen commits, error in database' );
-            cb(null, 0, 0);
+            this.emptyTests = true;
+			cb(null, 0, 0);
         } else {
             // I'm not sure we need to have this, but it exists for now till we decide not to have it.
             for (var i = 0; i < results.rows.length; i++) {
@@ -128,7 +131,8 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
             console.log('initTestPQ threw an Error');
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
-            cb(null);
+            this.emptyTestByScore = true;
+			cb(null);
         } else {
             for (var i = 0; i < results.rows.length; i++) {
                 var result = results.rows[i];
@@ -148,16 +152,17 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
     };
 
 	if (this.emptyCommits || this.emptyTests || this.emptyTestPQ){
-		console.log("one of the databases is empty, Commits, Tests or TestPQ.")
+		console.log("one of the tables is empty: Commits, Tests or test_by_score.")
 		cb(null);
-	}	
-
-    var lastCommit = this.commits[commitIndex].hash;
-         lastHash = lastCommit && lastCommit.hash || '';
-    if (!lastHash) {
-      cb(null);
-    }
-    //var cql = 'select test, score, commit from test_by_score where commit = ?';
+	}else{	
+		//we cannot allow this code to execute if the this.commits is empty or the script will crash
+		var lastCommit = this.commits[commitIndex].hash;
+        lastHash = lastCommit && lastCommit.hash || '';
+		if (!lastHash) {
+			cb(null);
+		}
+	}
+    var cql = 'select test, score, commit from test_by_score where commit = ?';
 	//console.log("-------------------------------------")
 	//console.log("cql query: ", cql);
 	//console.log("lastCommit: ", lastCommit);
