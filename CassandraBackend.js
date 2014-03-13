@@ -20,6 +20,11 @@ function tidFromDate(date) {
 function CassandraBackend(name, config, callback) {
     var self = this;
 
+	this.emptyCommits = false;
+	this.emptyTests = false;
+	this.emptyTestPQ = false;
+
+
     this.name = name;
     this.config = config;
     // convert consistencies from string to the numeric constants
@@ -51,7 +56,7 @@ function CassandraBackend(name, config, callback) {
     // Load all the tests from Cassandra - do this when we see a new commit hash
     async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], function(err) {
 		if (err) {
-            console.log( 'failure in setup', err );
+            console.log( 'failure in setup due to error: ', err );
         }
         console.log( 'in memory queue setup complete' );
     });
@@ -62,21 +67,21 @@ function CassandraBackend(name, config, callback) {
 // cb is getTests
 function getCommits(cb) {
     var queryCB = function (err, results) {
-        if (err) {
+        console.log(results);
+		//process.exit(0);
+		if (err) {
 			console.log("getCommits threw an Error!");
             cb(err);
-        } else if (!results || !results.rows) {
+        } else if (!results || !results.rows || results.rows == 0) {
             console.log( 'no seen commits, error in database' );
             cb(null);
         } else {
-			printDebug("results from commits table query: ", results);
             for (var i = 0; i < results.rows.length; i++) {
                 var commit = results.rows[i];
                 // commits are currently saved as blobs, we shouldn't call toString on them...
                 // commit[0].toString()
                 this.commits.push( { hash: commit[0], timestamp: commit[1], isKeyframe: commit[2] } );
             }
-			printDebug("this commits", this.commits);			
             cb(null);
         }
     };
@@ -89,10 +94,14 @@ function getCommits(cb) {
 // cb is initTestPQ
 function getTests(cb) {
     var queryCB = function (err, results) {
-        if (err) {
+        //console.log(results.rows.length);
+		//console.log("!results", !results);
+		//console.log("!results.rows", !results.rows);
+		//process.exit(0);
+		if (err) {
 			console.log("getTests threw an Error!");
             cb(err);
-        } else if (!results || !results.rows) {
+        } else if (!results || !results.rows || results.rows.length == 0) {
             console.log( 'no seen commits, error in database' );
             cb(null, 0, 0);
         } else {
@@ -113,7 +122,9 @@ function getTests(cb) {
 
 function initTestPQ(commitIndex, numTestsLeft, cb) {
     var queryCB = function (err, results) {
-        if (err) {
+        //console.log(results);
+		//process.exit(0);
+		if (err) {
             console.log('initTestPQ threw an Error');
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
@@ -136,16 +147,21 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
         }
     };
 
+	if (this.emptyCommits || this.emptyTests || this.emptyTestPQ){
+		console.log("one of the databases is empty, Commits, Tests or TestPQ.")
+		cb(null);
+	}	
+
     var lastCommit = this.commits[commitIndex].hash;
          lastHash = lastCommit && lastCommit.hash || '';
     if (!lastHash) {
       cb(null);
     }
-    var cql = 'select test, score, commit from test_by_score where commit = ?';
-	console.log("-------------------------------------")
-	console.log("cql query: ", cql);
-	console.log("lastCommit: ", lastCommit);
-	console.log("-------------------------------------\n");
+    //var cql = 'select test, score, commit from test_by_score where commit = ?';
+	//console.log("-------------------------------------")
+	//console.log("cql query: ", cql);
+	//console.log("lastCommit: ", lastCommit);
+	//console.log("-------------------------------------\n");
 	this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
 }
 
