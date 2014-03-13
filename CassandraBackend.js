@@ -23,9 +23,9 @@ function CassandraBackend(name, config, callback) {
 	//state for the CassandraBackend obj to detect when one of the tables is empty
 	this.emptyCommits = false;
 	this.emptyTests = false;
-	this.emptyTestPQ = false;
+	this.emptyTestByScore = false;
 
-
+	
     this.name = name;
     this.config = config;
     // convert consistencies from string to the numeric constants
@@ -55,12 +55,14 @@ function CassandraBackend(name, config, callback) {
     self.testsList = {};
 
     // Load all the tests from Cassandra - do this when we see a new commit hash
-    async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], function(err) {
+    var statusOfSetup = function(err){
 		if (err) {
             console.log( 'failure in setup due to error: ', err );
         }else if(this.emptyCommits || this.emptyTests || this.emptyTestByScore ){
 			//printing which tables are empty. 
 			//No news are good news (i.e. if it doesn't say its empty, its not empty)
+			
+			console.log("Printing information on empty tables:");
 			if(this.emptyCommits){
 				console.log("Empty commits table");
 			}
@@ -73,7 +75,8 @@ function CassandraBackend(name, config, callback) {
 		
 		}
         console.log( 'in memory queue setup complete' );
-    });
+	};
+	async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], statusOfSetup.bind( this ));
 
     callback();
 }
@@ -81,8 +84,9 @@ function CassandraBackend(name, config, callback) {
 // cb is getTests
 function getCommits(cb) {
     var queryCB = function (err, results) {
-        console.log(results);
+        //console.log(results);
 		//process.exit(0);
+		console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);
 		if (err) {
 			console.log("getCommits threw an Error!");
             cb(err);
@@ -113,6 +117,7 @@ function getTests(cb) {
 		//console.log("!results", !results);
 		//console.log("!results.rows", !results.rows);
 		//process.exit(0);
+		console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
 		if (err) {
 			console.log("getTests threw an Error!");
             cb(err);
@@ -140,6 +145,7 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
     var queryCB = function (err, results) {
         //console.log(results);
 		//process.exit(0);
+	    console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
 		if (err) {
             console.log('initTestPQ threw an Error');
             cb(err);
@@ -165,7 +171,7 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
     };
 
 	if (this.emptyCommits){
-		console.log("the commits table is empty: Commits.")
+		console.log("the commits table is empty.")
 		cb(null);
 	}else{	
 		//we cannot allow this code to execute if the this.commits is empty or the script will crash
@@ -174,13 +180,11 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
 		if (!lastHash) {
 			cb(null);
 		}
+		
+		var cql = 'select test, score, commit from test_by_score where commit = ?';
+		this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
+		cb(null);
 	}
-    var cql = 'select test, score, commit from test_by_score where commit = ?';
-	//console.log("-------------------------------------")
-	//console.log("cql query: ", cql);
-	//console.log("lastCommit: ", lastCommit);
-	//console.log("-------------------------------------\n");
-	this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
 }
 
 /**
