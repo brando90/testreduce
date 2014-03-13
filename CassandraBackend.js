@@ -58,7 +58,20 @@ function CassandraBackend(name, config, callback) {
     async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], function(err) {
 		if (err) {
             console.log( 'failure in setup due to error: ', err );
-        }
+        }else if(this.emptyCommits || this.emptyTests || this.emptyTestByScore ){
+			//printing which tables are empty. 
+			//No news are good news (i.e. if it doesn't say its empty, its not empty)
+			if(this.emptyCommits){
+				console.log("Empty commits table");
+			}
+			if(this.emptyTests){
+				console.log("Empty Tests table");
+			}
+			if(this.emptyTestByScore){
+				console.log("Empty test_by_score");	
+			}
+		
+		}
         console.log( 'in memory queue setup complete' );
     });
 
@@ -151,8 +164,8 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
         }
     };
 
-	if (this.emptyCommits || this.emptyTests || this.emptyTestPQ){
-		console.log("one of the tables is empty: Commits, Tests or test_by_score.")
+	if (this.emptyCommits){
+		console.log("the commits table is empty: Commits.")
 		cb(null);
 	}else{	
 		//we cannot allow this code to execute if the this.commits is empty or the script will crash
