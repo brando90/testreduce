@@ -141,8 +141,8 @@ var lastFetchedDate = new Date(0);
 
 var backend = null;
 
-if(settings.backend.type ==="cassandra") {
-  backend = new CassandraBackend("", settings, function(err) {
+if(settings.backend.type ==="cassandra") { 
+	backend = new CassandraBackend("", settings, function(err) {
      if(err) {
         console.error("CassandraBackend not working??");
         process.exit(1);
@@ -151,7 +151,9 @@ if(settings.backend.type ==="cassandra") {
      }
   });
 } else if(settings.backend.type ==="mock") {
-  backend = new MockBackend("", settings, function(err) {
+	console.log('ERROR MOCKBACKEND CALLED');
+	process.exit(0);
+	backend = new MockBackend("", settings, function(err) {
     if(err) {
         console.error("MockBackend not working??");
         process.exit(1);
@@ -161,6 +163,7 @@ if(settings.backend.type ==="cassandra") {
     }
   });
 }
+
 
 /*BEGIN: COORD APP*/
 
@@ -172,7 +175,9 @@ var getTitle = function ( req, res ) {
     res.setHeader( 'Content-Type', 'text/plain; charset=UTF-8' );
 
     var fetchCb = function(retVal) {
-        var errorCode = retVal.error ? retVal.error.code : undefined;
+        //console.log("BEFORE process.exit(0)");
+		//process.exit(0);
+		var errorCode = retVal.error ? retVal.error.code : undefined;
         switch (errorCode)
         {
             case 'ResourceNotFoundError':
@@ -186,7 +191,6 @@ var getTitle = function ( req, res ) {
                 break;
         }
     };
-
     store.getTest(commitHash, commitDate, fetchCb);
 };
 
@@ -572,6 +576,7 @@ coordApp.get( /^\/title$/, getTitle );
 
 // Receive results from clients
 coordApp.post( /^\/result\/([^\/]+)\/([^\/]+)/, receiveResults );
+
 
 // Start the app
 app.listen( 8001 );

@@ -47,8 +47,23 @@ var insertTestByScore = function(prefix, title) {
     });
 };
 
+var insertDummyCommit = function(dummyCommit, tid) {
+	var query = "INSERT INTO commits (hash, tid, keyframe) VALUES (?, now(), ?)",
+		commit_hash = new Buffer(DUMMYCOMMIT),
+		tid = 1,
+		keyframe = true;
+	client.execute(query, [commit_hash, keyframe], 1, function (err, result){
+		if (err) {
+			console.log(err)
+		} else {
+			console.log("Dummy Commit hash insertion successful.")
+		}
+});
+}
+
 var loadJSON = function(prefix) {
-    var i, titles = require(['./', prefix, 'wiki-10000.json'].join(''));
+    insertDummyCommit(DUMMYCOMMIT);
+	var i, titles = require(['./', prefix, 'wiki-10000.json'].join(''));
     console.log('importing ' + prefix + ' wiki articles from:');
     console.log(['./', prefix, 'wiki-10000.json'].join(''));
     for (i = 0; i < titles.length; i++) {

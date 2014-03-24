@@ -90,7 +90,7 @@ function getTests(cb) {
     var queryCB = function (err, results) {
         if (err) {
             cb(err);
-        } else if (!results || !results.rows) {
+        } else if (!results || !results.rows || results.rows.length === 0) {
             console.log( 'no seen commits, error in database' );
             cb(null, 0, 0);
         } else {
@@ -98,6 +98,8 @@ function getTests(cb) {
             for (var i = 0; i < results.rows.length; i++) {
                 this.testsList[results.rows[i]] = true;
             }
+			console.log("getTests -> queryCB");
+			console.log("results.rows.length: ", results.rows.length);
             cb(null, 0, results.rows.length);
         }
     };
@@ -125,7 +127,9 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
             if (numTestsLeft == 0 || this.commits[commitIndex].isSnapshot) {
                 cb(null);
             }
-
+			console.log("initTestPQ -> queryCB");	
+			console.log("results.rows.length", results.rows.length);
+			console.log("numTestsLeft",numTestsLeft);
             if (numTestsLeft - results.rows.length > 0) {
                 var redo = initTestPQ.bind( this );
                 redo( commitIndex + 1, numTestsLeft - results.rows.length, cb);
@@ -133,7 +137,21 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
             cb(null);
         }
     };
-    var lastCommit = this.commits[commitIndex].hash;
+	/*
+	console.log("\n==============================")
+	console.log("------------\n");
+	console.log("this.commits: ", this.commits);
+	console.log("------------\n");
+	console.log("this.commits.length: ", this.commits.length);
+	console.log("------------\n");
+	console.log("commitIndex: ", commitIndex);
+	console.log("------------\n");
+	console.log("this.commits[commitIndex]: ", this.commits[0]);
+	*/
+	//if(this.commits[commitIndex] == null || this.commits[commitIndex] ==  undefined){
+	//	cb(null);
+	//}
+	var lastCommit = this.commits[commitIndex].hash;
         lastHash = lastCommit && lastCommit.hash || '';
     if (!lastHash) {
       cb(null);
