@@ -117,7 +117,7 @@ function getTests(cb) {
 		//console.log("!results", !results);
 		//console.log("!results.rows", !results.rows);
 		//process.exit(0);
-		console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
+		//console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
 		if (err) {
 			console.log("getTests threw an Error!");
             cb(err);
@@ -180,7 +180,8 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
 		if (!lastHash) {
 			cb(null);
 		}
-		
+	
+			
 		var cql = 'select test, score, commit from test_by_score where commit = ?';
 		this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
 		cb(null);
