@@ -47,22 +47,26 @@ var insertTestByScore = function(prefix, title) {
     });
 };
 
+/*
 var insertDummyCommit = function(dummyCommit, tid) {
-	var query = "INSERT INTO commits (hash, tid, keyframe) VALUES (?, now(), ?)",
+	console.log("Calling insertDummyCommit");
+	var queryCommit = "INSERT INTO commits (hash, tid, keyframe) VALUES (?, now() , ?)",
 		commit_hash = new Buffer(DUMMYCOMMIT),
-		tid = 1,
+		//tid = 'now()'
 		keyframe = true;
-	client.execute(query, [commit_hash, keyframe], 1, function (err, result){
+	client.execute(queryCommit, [commit_hash, null, keyframe], 1, function (err, result){
 		if (err) {
 			console.log(err)
 		} else {
 			console.log("Dummy Commit hash insertion successful.")
 		}
+		console.log("Done calling inserDummy Commit, success unknown.");
 });
 }
+*/
 
 var loadJSON = function(prefix) {
-    insertDummyCommit(DUMMYCOMMIT);
+    //insertDummyCommit(DUMMYCOMMIT); Does not work, dont know why
 	var i, titles = require(['./', prefix, 'wiki-10000.json'].join(''));
     console.log('importing ' + prefix + ' wiki articles from:');
     console.log(['./', prefix, 'wiki-10000.json'].join(''));

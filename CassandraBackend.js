@@ -39,7 +39,7 @@ function CassandraBackend(name, config, callback) {
         }
     };
     this.client.on('connection', reconnectCB);
-    this.client.connect();
+	this.client.connect();
 
     var numFailures = config.numFailures;
 
