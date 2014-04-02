@@ -14,6 +14,7 @@ cp server.settings.js.example server.settings.js
 cqlsh < cql/create_everything.cql
 ```
 
+
 Running the server
 ------------------
 
