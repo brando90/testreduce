@@ -20,6 +20,12 @@ function tidFromDate(date) {
 function CassandraBackend(name, config, callback) {
     var self = this;
 
+	//state for the CassandraBackend obj to detect when one of the tables is empty
+	this.emptyCommits = false;
+	this.emptyTests = false;
+	this.emptyTestByScore = false;
+
+	
     this.name = name;
     this.config = config;
     // convert consistencies from string to the numeric constants
@@ -28,7 +34,6 @@ function CassandraBackend(name, config, callback) {
         read: consistencies[confConsistencies.read],
         write: consistencies[confConsistencies.write]
     };
-
     self.client = new cass.Client(config.backend.options);
 
     var reconnectCB = function(err) {
@@ -50,12 +55,28 @@ function CassandraBackend(name, config, callback) {
     self.testsList = {};
 
     // Load all the tests from Cassandra - do this when we see a new commit hash
-    async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], function(err) {
-        if (err) {
-            console.log( 'failure in setup', err );
-        }
+    var statusOfSetup = function(err){
+		if (err) {
+            console.log( 'failure in setup due to error: ', err );
+        }else if(this.emptyCommits || this.emptyTests || this.emptyTestByScore ){
+			//printing which tables are empty. 
+			//No news are good news (i.e. if it doesn't say its empty, its not empty)
+			
+			console.log("Printing information on empty tables:");
+			if(this.emptyCommits){
+				console.log("Empty commits table");
+			}
+			if(this.emptyTests){
+				console.log("Empty Tests table");
+			}
+			if(this.emptyTestByScore){
+				console.log("Empty test_by_score");	
+			}
+		
+		}
         console.log( 'in memory queue setup complete' );
-    });
+	};
+	async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], statusOfSetup.bind( this ));
 
 	// initLargestLists.bind( this )();
 
@@ -65,7 +86,11 @@ function CassandraBackend(name, config, callback) {
 // cb is getTests
 function getCommits(cb) {
     var queryCB = function (err, results) {
-        if (err) {
+        //console.log(results);
+		//process.exit(0);
+		console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);
+		if (err) {
+			console.log("getCommits threw an Error!");
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
             //console.log( 'no seen commits, error in database' );
@@ -92,11 +117,18 @@ function getCommits(cb) {
 // cb is initTestPQ
 function getTests(cb) {
     var queryCB = function (err, results) {
-        if (err) {
+        //console.log(results.rows.length);
+		//console.log("!results", !results);
+		//console.log("!results.rows", !results.rows);
+		//process.exit(0);
+		//console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
+		if (err) {
+			console.log("getTests threw an Error!");
             cb(err);
-        } else if (!results || !results.rows) {
+        } else if (!results || !results.rows || results.rows.length == 0) {
             console.log( 'no seen commits, error in database' );
-            cb(null, 0, 0);
+            this.emptyTests = true;
+			cb(null, 0, 0);
         } else {
             // I'm not sure we need to have this, but it exists for now till we decide not to have it.
             for (var i = 0; i < results.rows.length; i++) {
@@ -115,11 +147,15 @@ function getTests(cb) {
 
 function initTestPQ(commitIndex, numTestsLeft, cb) {
     var queryCB = function (err, results) {
-        if (err) {
-            console.log('in error init test PQ');
+        //console.log(results);
+		//process.exit(0);
+	    console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
+		if (err) {
+            console.log('initTestPQ threw an Error');
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
-            cb(null);
+            this.emptyTestByScore = true;
+			cb(null);
         } else {
             for (var i = 0; i < results.rows.length; i++) {
                 var result = results.rows[i];

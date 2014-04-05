@@ -5,7 +5,8 @@
  *
  * You can also override these settings with command line options, run
  * $ node server.js --help
- * to view them.
+ * to view them. 
+ *
  */
 
 module.exports = {
