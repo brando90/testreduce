@@ -393,17 +393,17 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
         case 'time:total':
             break;
         case 'time:wt2html':
-            breal;
+            break;
         case 'time:wt2html':
-            breal;
+            break;
         case 'time:wt2html':
-            breal;
+            break;
         case 'time:wt2html':
-            breal;
+            break;
         case 'time:wt2html':
-            breal;
+            break;
         case 'time:wt2html':
-            breal;
+            break;
     }
 }
 
