@@ -57,6 +57,8 @@ function CassandraBackend(name, config, callback) {
         console.log( 'in memory queue setup complete' );
     });
 
+	// initLargestLists.bind( this )();
+
     callback();
 }
 
@@ -69,10 +71,12 @@ function getCommits(cb) {
             //console.log( 'no seen commits, error in database' );
             cb("no seen commits, error in database");
         } else {
+			console.log("results.row.length: ", results.rows.length);
             for (var i = 0; i < results.rows.length; i++) {
                 var commit = results.rows[i];
                 // commits are currently saved as blobs, we shouldn't call toString on them...
                 // commit[0].toString()
+				//console.log("commit: ", commit)
                 this.commits.push( { hash: commit[0], timestamp: commit[1], isKeyframe: commit[2] } );
             }
             this.commits.sort( function(a, b) { return b > a } );
@@ -144,6 +148,11 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
     this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
 }
 
+//function initLargestLists(){
+//	var cqlLargestTimeTotal = "SELECT * FROM ";
+//
+//}
+
 /**
  * Get the number of regressions based on the previous commit
  *
@@ -187,7 +196,8 @@ CassandraBackend.prototype.getTestToRetry = function() {
 };
 
 CassandraBackend.prototype.updateCommits = function(lastCommitTimestamp, commit, date) {
-    if (lastCommitTimestamp < date) {
+    console.log("lastCommitTimestamp < date: ", lastCommitTimestamp < date);
+	if (lastCommitTimestamp < date) {
         this.commits.unshift( { hash: commit, timestamp: date, isKeyframe: false } );
         cql = 'insert into commits (hash, tid, keyframe) values (?, ?, ?);';
         args = [new Buffer(commit), tidFromDate(date), false];
@@ -215,16 +225,28 @@ CassandraBackend.prototype.getTest = function (clientCommit, clientDate, cb) {
         retVal = { error: { code: 'ResourceNotFoundError', messsage: 'No tests to run for this commit'} };
 
     this.updateCommits(lastCommitTimestamp, clientCommit, clientDate);
-    if (lastCommitTimestamp > clientDate) {
-        retVal = { error: { code: 'BadCommitError', message: 'Commit too old' } };
+	console.log();
+	console.log("lastCommitTimestamp > clientDate: " , lastCommitTimestamp > clientDate);
+	console.log("clientCommit: ", clientCommit);
+    console.log("::::::> lastCommitTimestamp: ", lastCommitTimestamp);
+	console.log("::::::::> clientDate: ", clientDate);
+	console.log("retry: ", retry);
+	console.log("this.testQueue.size(): ", this.testQueue.size());
+	if (lastCommitTimestamp > clientDate) {
+		retVal = { error: { code: 'BadCommitError', message: 'Commit too old' } };
     } else if (retry) {
+		console.log("::::::> retry statment (in getTest)");
         retVal = { test: retry };
     } else if (this.testQueue.size()) {
+		console.log("::::::::::> this.testQueue.size() statment");
         var test = this.testQueue.deq();
         //ID for identifying test, containing title, prefix and oldID.
         this.runningQueue.unshift({test: test, startTime: new Date()});
         retVal = { test : test.test };
-    }
+    }else{
+		console.log("went into NONE of the if clauses");	
+	}
+
     cb(retVal);
 };
 
@@ -330,27 +352,100 @@ CassandraBackend.prototype.getStatistics = function(commit, cb) {
  * @param commit object {
  *    hash: <git hash string>
  *    timestamp: <git commit timestamp date object>
- * }
- * @param result string (JUnit XML typically)
  * @param cb callback (err) err or null
  */
 CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
-    this.removePassedTest(test);
+    console.log("CALLING addResult");
+	this.removePassedTest(test);
     cql = 'insert into results (test, tid, result) values (?, ?, ?);';
-    args = [test, tidFromDate(new Date()), result];
+    tid = tidFromDate(new Date())
+    args = [test, tid, result];
     this.client.execute(cql, args, this.consistencies.write, function(err, result) {
         if (err) {
             console.log(err);
         } else {
         }
-    });
+    });	
+    this.addResultToLargestTable(commit, tid, result, test);
 }
+
+
+/**
+* Add a result to the corresponding largest size/time table.
+* @param commit object {
+*    hash: <git hash string>
+*    timestamp: <git commit timestamp date object>
+* @param tid 
+* @param result the result string in XML form
+* @test that generated this result (TODO CHECK THIS)
+**/
+CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test){
+    cqlLargestTime_total = "SELECT (sorted_list_top_largest) FROM largest_time_total WHERE commit = (?)";
+    cqlLargestTime_wt2html = "SELECT (sorted_list_top_largest) FROM largest_time_wt2html WHERE commit = (?)";
+    cqlLargestTime_html2wt = "SELECT (sorted_list_top_largest) FROM largest_time_html2wt WHERE commit = (?)";
+    cqlLargestSize_htmlraw = "SELECT (sorted_list_top_largest) FROM largest_size_htmlraw WHERE commit = (?)";
+    cqlLargestSize_htmlgzip = "SELECT (sorted_list_top_largest) FROM largest_size_htmlgzip WHERE commit = (?)";
+    cqlLargestSize_wtraw = "SELECT (sorted_list_top_largest) FROM largest_size_wtraw WHERE commit = (?)";
+    cqlLargestSize_wtgzip = "SELECT (sorted_list_top_largest) FROM largest_size_wtraw WHERE commit = (?)";
+    var result_parsed_obj = this.parsePerfStats(result);
+    var type_of_cql = result_parsed_obj[type]
+    switch(type_of_cql){
+        case 'time:total':
+            break;
+        case 'time:wt2html':
+            breal;
+        case 'time:wt2html':
+            breal;
+        case 'time:wt2html':
+            breal;
+        case 'time:wt2html':
+            breal;
+        case 'time:wt2html':
+            breal;
+        case 'time:wt2html':
+            breal;
+    }
+}
+
+CassandraBackend.prototype.parsePerfStats = function( text) {
+    var regexp = /<perfstat[\s]+type="([\w\:]+)"[\s]*>([\d]+)/g;
+    var perfstats = [];
+    for ( var match = regexp.exec( text ); match !== null; match = regexp.exec( text ) ) {
+        perfstats.push( { type: match[ 1 ], value: match[ 2 ] } );
+    }
+    return perfstats;
+};
 
 var statsScore = function(skipCount, failCount, errorCount) {
     // treat <errors,fails,skips> as digits in a base 1000 system
     // and use the number as a score which can help sort in topfails.
     return errorCount*1000000+failCount*1000+skipCount;
 };
+
+CassandraBackend.prototype.getTopLargest = function(){
+	var queryCB =  function(err, results){
+		console.log("Inside queryCB");
+		if (err){
+			console.log("ERROR!");
+			process.exit(0);
+		} else if (!results || !results.rows || results.rows.length === 0){
+            console.log("ERROR!");
+            process.exit(0);		
+		} else{
+			//console.log(results.rows.length);
+			for (var i = 0; i < results.rows.length; i++){
+				var result = results.rows[i];
+				console.log(result[0]);
+				console.log(result[1]);
+				obj = this.parsePerfStats(result[2])
+				console.log(obj);
+				process.exit(0);
+			}
+		}
+	}
+	var cql = "SELECT * FROM results";
+	this.client.execute(cql, [], this.consistencies.write, queryCB.bind(this));	
+}
 
 /**
  * Get results ordered by score
@@ -379,6 +474,7 @@ CassandraBackend.prototype.getFails = function(offset, limit, cb) {
      */
     cb([]);
 }
+
 
 // Node.js module exports. This defines what
 // require('./CassandraBackend.js'); evaluates to.

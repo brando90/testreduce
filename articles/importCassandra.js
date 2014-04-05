@@ -16,7 +16,8 @@ var argv = require('optimist')
            .argv;
 
 //RANDOM COMMIT I MADE UP DOESN'T DO ANYTHING FOR NOW
-var DUMMYCOMMIT = '0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6';
+//var DUMMYCOMMIT = '0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6';
+var DUMMYCOMMIT = '33471172030bb001557200d193b402cfdf4eeaaf';
 
 var createTestBlob = function(prefix, title) {
     return new Buffer(JSON.stringify({prefix: prefix, title:title, oldid:42}));
@@ -43,6 +44,7 @@ var insertTestByScore = function(prefix, title) {
         if (err) {
             console.log(err);
         } else {
+			console.log('SUCCESS TEST_BY_SCORE');
         }
     });
 };
@@ -60,3 +62,4 @@ var loadJSON = function(prefix) {
 };
 
 loadJSON(argv['_'][0]);
+console.log("DONE");

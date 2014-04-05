@@ -165,7 +165,8 @@ if(settings.backend.type ==="cassandra") {
 /*BEGIN: COORD APP*/
 
 var getTitle = function ( req, res ) {
-    var commitHash = req.query.commit,
+	console.log("Calling getTitle!");
+	var commitHash = req.query.commit,
         commitDate = new Date(req.query.ctime),
         store = backend;
 
@@ -173,12 +174,16 @@ var getTitle = function ( req, res ) {
 
     var fetchCb = function(retVal) {
         var errorCode = retVal.error ? retVal.error.code : undefined;
-        switch (errorCode)
+        console.log(retVal);
+		console.log("commit hash: ", commitHash);
+		switch (errorCode)
         {
             case 'ResourceNotFoundError':
+				console.log("Calling 404");
                 res.send('', 404);
                 break;
             case 'BadCommitError':
+				console.log('BadCommiError');
                 res.send('', 400);
                 break;
             default:
@@ -420,6 +425,7 @@ var displayPageList = function(res, data, makeRow, err, rows){
     if ( err ) {
         res.send( err.toString(), 500 );
     } else if ( !rows || rows.length <= 0 ) {
+		console.log("CALLING 404");
         res.send( "No entries found", 404 );
     } else {
         var tableRows = [];
@@ -495,6 +501,12 @@ var commitLinkData = function(commit, title, prefix) {
     };
 };
 /* End- Helper functions for GET_regressions*/
+console.log("\nCALLING getTopLargest");
+backend.getTopLargest();
+console.log("END of getTopLargest\n");
+
+
+
 
 
 // Make an app
