@@ -4,7 +4,8 @@ var util = require('util'),
   consistencies = cass.types.consistencies,
   uuid = require('node-uuid'),
   PriorityQueue = require('priorityqueuejs'),
-  async = require('async');
+  async = require('async'),
+  insertFunc = require('insert_function.js');
 
 function tidFromDate(date) {
     // Create a new, deterministic timestamp
@@ -427,6 +428,7 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
 
 CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value){
     var queryCB = function(err, results){
+        //get the sorted list from the DB and then try to insert new_value if appropriate
         if(err){
             console.log(err);
         } else if (results.rows.length > 1 ) {
@@ -442,10 +444,18 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
             } 
             var result = results.rows[0];
             sorted_list = JSON.parse(result[3]);
-            if(result.length < this.k){
-
+            if(sorted_list.length < this.k){
+                sorted_list = insertFunc.insert(sorted_list, new_value);
+                sorted_list_json_str = JSON.stringify(sorted_list);
+                this.client.execute(update_cql, [commit, tid, sorted_list_json_str], this.consistencies.write, cb);
             }else{
-
+                var smallest_element = sorted_list[sorted_list.length]
+                if(smallest_element < new_value){
+                    sorted_list = insertFunc.insert(sorted_list, new_value);
+                    sorted_list =  sorted_list.slice(1, sorted_list.length);
+                    sorted_list_json_str = JSON.stringify(sorted_list);
+                    this.client.execute(update_cql, [commit, tid, sorted_list_json_str], this.consistencies.write, cb);
+                }
             }
         }
 
@@ -468,31 +478,6 @@ var statsScore = function(skipCount, failCount, errorCount) {
     // and use the number as a score which can help sort in topfails.
     return errorCount*1000000+failCount*1000+skipCount;
 };
-
-CassandraBackend.prototype.getTopLargest = function(){
-	var queryCB =  function(err, results){
-		console.log("Inside queryCB");
-		if (err){
-			console.log("ERROR!");
-			process.exit(0);
-		} else if (!results || !results.rows || results.rows.length === 0){
-            console.log("ERROR!");
-            process.exit(0);		
-		} else{
-			//console.log(results.rows.length);
-			for (var i = 0; i < results.rows.length; i++){
-				var result = results.rows[i];
-				console.log(result[0]);
-				console.log(result[1]);
-				obj = this.parsePerfStats(result[2])
-				console.log(obj);
-				process.exit(0);
-			}
-		}
-	}
-	var cql = "SELECT * FROM results";
-	this.client.execute(cql, [], this.consistencies.write, queryCB.bind(this));	
-}
 
 /**
  * Get results ordered by score
