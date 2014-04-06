@@ -398,8 +398,9 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
             console.log(err);
         } else {
         }
-    });	
-    this.addResultToLargestTable(commit, tid, result, test);
+    });
+    //with the current results, update the top k largest sizes/times
+    this.addResultToLargestTable(commit, tid, result, test, cb);
 }
 
 
@@ -412,49 +413,81 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
 * @param result the result string in XML form
 * @test that generated this result (TODO CHECK THIS)
 **/
-CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test){
-    var result_parsed_obj = this.parsePerfStats(result);
-    var type_of_cql = result_parsed_obj[type]
-    var types = type_of_cql.split(":");
-    var type = types[0]; //size or time
-    var type_name = type[1]; 
-    var new_value = result_parsed_obj[value]
-    var tableName = "largest_"+type+"_"+type_name;
-
-    var select_cql = "SELECT (sorted_list_top_largest) FROM "+tableName+" WHERE commit = (?)";
-    var update_cql = "INSERT INTO "+tableName+" (commit, timeuuid, sorted_list_top_largest) VALUES (?, ?, ?)";
-    this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value);
+CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test, cb){
+    var result_parsed_array = this.parsePerfStats(result);
+    for (var i = 0; i < result_parsed_array.length; i++){
+        var current_parsed_result_obj = result_parsed_array[i];
+        var types = current_parsed_result_obj["type"].split(":");
+        var type = types[0]; //size or time
+        var type_name = type[1]; //total, wtzhtml, ... , wtraw, wtgzip
+        var new_value = current_parsed_result_obj["value"];
+        var tableName = "largest_"+type+"_"+type_name;
+        var select_cql = "SELECT (sorted_list_top_largest) FROM "+tableName+" WHERE commit = (?)";
+        var update_cql = "INSERT INTO "+tableName+" (commit, timeuuid, sorted_list_top_largest, sorted_list_corresponding_test) VALUES (?, ?, ?, ?)";
+        this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value, test, cb);
+    }
 }
 
-CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value){
+/**
+* @param select_cql: the cql query that will make sure we get the current largest k sizes/times from database. Neccesary to
+*   to make sure that whatever new value are trying to add gets compared to the most recent top largest things.
+* @param update_cql: the cql query that the database if the new value the checks.
+* @commit: the commit we are trying to update its results
+* @tid
+* @new_value: the new candidate value to add to the database (its added if its larger than any of the top k current things in the databse).
+* @cb: TODO: not sure if its neccesery. 
+**/
+CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test, cb){
     var queryCB = function(err, results){
         //get the sorted list from the DB and then try to insert new_value if appropriate
         if(err){
             console.log(err);
         } else if (results.rows.length > 1 ) {
-            console.log("There should never be two rows with the same commit.");
+            console.log("Panic: there should never be two rows with the same commit.");
         } else{
             var sorted_list;
             var sorted_list_json_str;
+            var sorted_list_test;
+            var sorted_list_corresponding_test_json_str;
             if (!results || !results.rows || results.rows.length === 0) {
                 //if this is the first time we are adding results, then just add it!
                 sorted_list = [new_value];
                 sorted_list_json_str =  JSON.stringify(sorted_list);
-                this.client.execute(update_cql, [commit, tid, sorted_list_json_str], this.consistencies.write, cb);
+                sorted_list_test = [test];
+                sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
+                this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
             } 
+
             var result = results.rows[0];
+            var index_to_insert;
             sorted_list = JSON.parse(result[3]);
+            sorted_list_test = JSON.parse(result[4]);
             if(sorted_list.length < this.k){
-                sorted_list = insertFunc.insert(sorted_list, new_value);
+                //get index
+                index_to_insert = insertFunc.getIndexPositionToInsert(sorted_list, new_value);
+                //insert to sorted lists
+                sorted_list = insertFunc.insertIntoPosition(sorted_list, new_value, index_to_insert);
+                sorted_list_test = insertFunc.insertIntoPosition(sorted_list_test, test, index_to_insert);
+                //make json string
                 sorted_list_json_str = JSON.stringify(sorted_list);
-                this.client.execute(update_cql, [commit, tid, sorted_list_json_str], this.consistencies.write, cb);
+                sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
+                //update database
+                this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
             }else{
-                var smallest_element = sorted_list[sorted_list.length]
+                var smallest_element = sorted_list[0];
                 if(smallest_element < new_value){
-                    sorted_list = insertFunc.insert(sorted_list, new_value);
+                    //get index
+                    index_to_insert = insertFunc.getIndexPositionToInsert(sorted_list, new_value);
+                    //insert to sorted lists
+                    sorted_list = insertFunc.insertIntoPosition(sorted_list, new_value, index_to_insert);
+                    sorted_list_test = insertFunc.insertIntoPosition(sorted_list_test, test, index_to_insert);
+                    //chopp of the old smallest element. Makes sure list remains length <= this.k
                     sorted_list =  sorted_list.slice(1, sorted_list.length);
+                    sorted_list_test =  sorted_list.slice(1, sorted_list_test.length);
+                    //make json string
                     sorted_list_json_str = JSON.stringify(sorted_list);
-                    this.client.execute(update_cql, [commit, tid, sorted_list_json_str], this.consistencies.write, cb);
+                    sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
+                    this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
                 }
             }
         }
@@ -464,7 +497,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
     this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this)); 
 }
 
-CassandraBackend.prototype.parsePerfStats = function( text) {
+CassandraBackend.prototype.parsePerfStats = function(text) {
     var regexp = /<perfstat[\s]+type="([\w\:]+)"[\s]*>([\d]+)/g;
     var perfstats = [];
     for ( var match = regexp.exec( text ); match !== null; match = regexp.exec( text ) ) {

@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS largest_time_total (
 	hash blob,
 	tid timeuuid,
 	sorted_list_top_largest text,
+	sorted_list_corresponding_test text,
 	PRIMARY KEY(hash)
 );
 
@@ -60,6 +61,7 @@ CREATE TABLE IF NOT EXISTS largest_time_wt2html (
 	hash blob,
 	tid timeuuid,
 	sorted_list_top_largest text,
+	sorted_list_corresponding_test text,
 	PRIMARY KEY(hash)
 );
 
@@ -68,6 +70,7 @@ CREATE TABLE IF NOT EXISTS largest_time_html2wt (
 	hash blob,
 	tid timeuuid,
 	sorted_list_top_largest text,
+	sorted_list_corresponding_test text,
 	PRIMARY KEY(hash)
 );
 
@@ -76,6 +79,7 @@ CREATE TABLE IF NOT EXISTS largest_size_htmlraw (
 	hash blob,
 	tid timeuuid,
 	sorted_list_top_largest text,
+	sorted_list_corresponding_test text,
 	PRIMARY KEY(hash)
 );
 
@@ -84,6 +88,7 @@ CREATE TABLE IF NOT EXISTS largest_size_htmlgzip (
 	hash blob,
 	tid timeuuid,	
 	sorted_list_top_largest text,
+	sorted_list_corresponding_test text,
 	PRIMARY KEY(hash)
 );
 
@@ -92,6 +97,7 @@ CREATE TABLE IF NOT EXISTS largest_size_wtraw (
 	hash blob,
 	tid timeuuid,
 	sorted_list_top_largest text,
+	sorted_list_corresponding_test text,
 	PRIMARY KEY(hash)
 );
 
@@ -99,5 +105,6 @@ CREATE TABLE IF NOT EXISTS largest_size_wtgzip (
 	hash blob,
 	tid timeuuid,
 	sorted_list_top_largest text,
+	sorted_list_corresponding_test text,
 	PRIMARY KEY(hash)
 );

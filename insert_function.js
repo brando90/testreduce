@@ -2,12 +2,21 @@ function insert(array, element){
   if(array.length == 0){
     return [element];
   }
-  var index = insertRec(array, element, 0, array.length - 1);
+  var index = getIndexPositionToInsert(array, element);
+  array.splice(index, 0, element)
+  return insertIntoPosition(array, element, index);
+}
+
+function insertIntoPosition(array, element, index){
   array.splice(index, 0, element)
   return array
 }
 
-function insertRec(array, element, i, j){
+function getIndexPositionToInsert(array, element){
+  return positionToInsertRec(array, element, 0, array.length);
+}
+
+function positionToInsertRec(array, element, i, j){
   if(j <= i){
     if(element <= array[i]){
       return i;
@@ -32,4 +41,6 @@ function insertRec(array, element, i, j){
 // console.log( insert([0, 1, 1.5, 2, 3], 1.5), "answer = ", [0, 1, 1.5, 2, 3]);
 
 exports.insert = insert;
-exports.insertRec = insertRec;
+exports.insertIntoPosition = insertIntoPosition;
+exports.getIndexPositionToInsert = getIndexPositionToInsert;
+exports.positionToInsertRec = positionToInsertRec;
