@@ -29,8 +29,8 @@ function getIndexPositionToInsert(array, element){
 * recursive function that finds the position to which to insert an element
 **/
 function positionToInsertRec(array, element, i, j){
-  //j - i
-  if( j <= i){
+  //if (j - i <= 1){
+  if (j <= i){
     if(element <= array[i]){
       return i;
     }else{
