@@ -20,11 +20,10 @@ function tidFromDate(date) {
 function CassandraBackend(name, config, callback) {
     var self = this;
 
-	//state for the CassandraBackend obj to detect when one of the tables is empty
-	this.emptyCommits = false;
-	this.emptyTests = false;
-	this.emptyTestByScore = false;
-
+    //indicates how many largest values we are going to have
+    //at the moment hard coded.
+    //should be included in the settings file
+    this.k = 100;
 	
     this.name = name;
     this.config = config;
@@ -147,9 +146,6 @@ function getTests(cb) {
 
 function initTestPQ(commitIndex, numTestsLeft, cb) {
     var queryCB = function (err, results) {
-        //console.log(results);
-		//process.exit(0);
-	    console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
 		if (err) {
             console.log('initTestPQ threw an Error');
             cb(err);
@@ -416,31 +412,46 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
 * @test that generated this result (TODO CHECK THIS)
 **/
 CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test){
-    cqlLargestTime_total = "SELECT (sorted_list_top_largest) FROM largest_time_total WHERE commit = (?)";
-    cqlLargestTime_wt2html = "SELECT (sorted_list_top_largest) FROM largest_time_wt2html WHERE commit = (?)";
-    cqlLargestTime_html2wt = "SELECT (sorted_list_top_largest) FROM largest_time_html2wt WHERE commit = (?)";
-    cqlLargestSize_htmlraw = "SELECT (sorted_list_top_largest) FROM largest_size_htmlraw WHERE commit = (?)";
-    cqlLargestSize_htmlgzip = "SELECT (sorted_list_top_largest) FROM largest_size_htmlgzip WHERE commit = (?)";
-    cqlLargestSize_wtraw = "SELECT (sorted_list_top_largest) FROM largest_size_wtraw WHERE commit = (?)";
-    cqlLargestSize_wtgzip = "SELECT (sorted_list_top_largest) FROM largest_size_wtraw WHERE commit = (?)";
     var result_parsed_obj = this.parsePerfStats(result);
     var type_of_cql = result_parsed_obj[type]
-    switch(type_of_cql){
-        case 'time:total':
-            break;
-        case 'time:wt2html':
-            break;
-        case 'time:wt2html':
-            break;
-        case 'time:wt2html':
-            break;
-        case 'time:wt2html':
-            break;
-        case 'time:wt2html':
-            break;
-        case 'time:wt2html':
-            break;
+    var types = type_of_cql.split(":");
+    var type = types[0]; //size or time
+    var type_name = type[1]; 
+    var new_value = result_parsed_obj[value]
+    var tableName = "largest_"+type+"_"+type_name;
+
+    var select_cql = "SELECT (sorted_list_top_largest) FROM "+tableName+" WHERE commit = (?)";
+    var update_cql = "INSERT INTO "+tableName+" (commit, timeuuid, sorted_list_top_largest) VALUES (?, ?, ?)";
+    this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value);
+}
+
+CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value){
+    var queryCB = function(err, results){
+        if(err){
+            console.log(err);
+        } else if (results.rows.length > 1 ) {
+            console.log("There should never be two rows with the same commit.");
+        } else{
+            var sorted_list;
+            var sorted_list_json_str;
+            if (!results || !results.rows || results.rows.length === 0) {
+                //if this is the first time we are adding results, then just add it!
+                sorted_list = [new_value];
+                sorted_list_json_str =  JSON.stringify(sorted_list);
+                this.client.execute(update_cql, [commit, tid, sorted_list_json_str], this.consistencies.write, cb);
+            } 
+            var result = results.rows[0];
+            sorted_list = JSON.parse(result[3]);
+            if(result.length < this.k){
+
+            }else{
+
+            }
+        }
+
     }
+    //get the largest values so far before updating them
+    this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this)); 
 }
 
 CassandraBackend.prototype.parsePerfStats = function( text) {
