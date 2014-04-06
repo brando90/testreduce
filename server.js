@@ -165,7 +165,7 @@ if(settings.backend.type ==="cassandra") {
 /*BEGIN: COORD APP*/
 
 var getTitle = function ( req, res ) {
-	console.log("Calling getTitle!");
+	//console.log("Calling getTitle!");
 	var commitHash = req.query.commit,
         commitDate = new Date(req.query.ctime),
         store = backend;
@@ -174,8 +174,8 @@ var getTitle = function ( req, res ) {
 
     var fetchCb = function(retVal) {
         var errorCode = retVal.error ? retVal.error.code : undefined;
-        console.log(retVal);
-		console.log("commit hash: ", commitHash);
+        //console.log(retVal);
+		//console.log("commit hash: ", commitHash);
 		switch (errorCode)
         {
             case 'ResourceNotFoundError':
@@ -502,7 +502,7 @@ var commitLinkData = function(commit, title, prefix) {
 };
 /* End- Helper functions for GET_regressions*/
 console.log("\nCALLING getTopLargest");
-backend.getTopLargest();
+//backend.getTopLargest();
 console.log("END of getTopLargest\n");
 
 

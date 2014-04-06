@@ -5,7 +5,7 @@ var util = require('util'),
   uuid = require('node-uuid'),
   PriorityQueue = require('priorityqueuejs'),
   async = require('async'),
-  insertFunc = require('insert_function.js');
+  insertFunc = require('./insert_function.js');
 
 function tidFromDate(date) {
     // Create a new, deterministic timestamp
@@ -58,22 +58,7 @@ function CassandraBackend(name, config, callback) {
     var statusOfSetup = function(err){
 		if (err) {
             console.log( 'failure in setup due to error: ', err );
-        }else if(this.emptyCommits || this.emptyTests || this.emptyTestByScore ){
-			//printing which tables are empty. 
-			//No news are good news (i.e. if it doesn't say its empty, its not empty)
-			
-			console.log("Printing information on empty tables:");
-			if(this.emptyCommits){
-				console.log("Empty commits table");
-			}
-			if(this.emptyTests){
-				console.log("Empty Tests table");
-			}
-			if(this.emptyTestByScore){
-				console.log("Empty test_by_score");	
-			}
-		
-		}
+        }
         console.log( 'in memory queue setup complete' );
 	};
 	async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], statusOfSetup.bind( this ));
@@ -88,15 +73,13 @@ function getCommits(cb) {
     var queryCB = function (err, results) {
         //console.log(results);
 		//process.exit(0);
-		console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);
 		if (err) {
-			console.log("getCommits threw an Error!");
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
             //console.log( 'no seen commits, error in database' );
             cb("no seen commits, error in database");
         } else {
-			console.log("results.row.length: ", results.rows.length);
+			//console.log("results.row.length: ", results.rows.length);
             for (var i = 0; i < results.rows.length; i++) {
                 var commit = results.rows[i];
                 // commits are currently saved as blobs, we shouldn't call toString on them...
@@ -123,11 +106,10 @@ function getTests(cb) {
 		//process.exit(0);
 		//console.log("TRUE OR FALSE?", this.emptyCommits || this.emptyTests || this.emptyTestByScore);	
 		if (err) {
-			console.log("getTests threw an Error!");
+			//console.log("getTests threw an Error!");
             cb(err);
         } else if (!results || !results.rows || results.rows.length == 0) {
             console.log( 'no seen commits, error in database' );
-            this.emptyTests = true;
 			cb(null, 0, 0);
         } else {
             // I'm not sure we need to have this, but it exists for now till we decide not to have it.
@@ -148,7 +130,7 @@ function getTests(cb) {
 function initTestPQ(commitIndex, numTestsLeft, cb) {
     var queryCB = function (err, results) {
 		if (err) {
-            console.log('initTestPQ threw an Error');
+            //console.log('initTestPQ threw an Error');
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
             this.emptyTestByScore = true;
@@ -175,7 +157,7 @@ function initTestPQ(commitIndex, numTestsLeft, cb) {
     if (!lastHash) {
       cb(null);
     }
-    var cql = 'select test, score, commit from test_by_score where commit = ?';
+    var cql = 'select test, score, commit from test_by_score where commit = ?'; //TODO this doesnt have a ; at the end of cql. issue?
     
 
     this.client.execute(cql, [lastCommit], this.consistencies.write, queryCB.bind( this ));
@@ -229,7 +211,7 @@ CassandraBackend.prototype.getTestToRetry = function() {
 };
 
 CassandraBackend.prototype.updateCommits = function(lastCommitTimestamp, commit, date) {
-    console.log("lastCommitTimestamp < date: ", lastCommitTimestamp < date);
+    //console.log("lastCommitTimestamp < date: ", lastCommitTimestamp < date);
 	if (lastCommitTimestamp < date) {
         this.commits.unshift( { hash: commit, timestamp: date, isKeyframe: false } );
         cql = 'insert into commits (hash, tid, keyframe) values (?, ?, ?);';
@@ -258,26 +240,26 @@ CassandraBackend.prototype.getTest = function (clientCommit, clientDate, cb) {
         retVal = { error: { code: 'ResourceNotFoundError', messsage: 'No tests to run for this commit'} };
 
     this.updateCommits(lastCommitTimestamp, clientCommit, clientDate);
-	console.log();
-	console.log("lastCommitTimestamp > clientDate: " , lastCommitTimestamp > clientDate);
-	console.log("clientCommit: ", clientCommit);
-    console.log("::::::> lastCommitTimestamp: ", lastCommitTimestamp);
-	console.log("::::::::> clientDate: ", clientDate);
-	console.log("retry: ", retry);
-	console.log("this.testQueue.size(): ", this.testQueue.size());
+	// console.log();
+	// console.log("lastCommitTimestamp > clientDate: " , lastCommitTimestamp > clientDate);
+	// console.log("clientCommit: ", clientCommit);
+    //console.log("::::::> lastCommitTimestamp: ", lastCommitTimestamp);
+	// console.log("::::::::> clientDate: ", clientDate);
+	// console.log("retry: ", retry);
+	// console.log("this.testQueue.size(): ", this.testQueue.size());
 	if (lastCommitTimestamp > clientDate) {
 		retVal = { error: { code: 'BadCommitError', message: 'Commit too old' } };
     } else if (retry) {
-		console.log("::::::> retry statment (in getTest)");
+		//console.log("::::::> retry statment (in getTest)");
         retVal = { test: retry };
     } else if (this.testQueue.size()) {
-		console.log("::::::::::> this.testQueue.size() statment");
+		//console.log("::::::::::> this.testQueue.size() statment");
         var test = this.testQueue.deq();
         //ID for identifying test, containing title, prefix and oldID.
         this.runningQueue.unshift({test: test, startTime: new Date()});
         retVal = { test : test.test };
     }else{
-		console.log("went into NONE of the if clauses");	
+		//console.log("went into NONE of the if clauses");	
 	}
 
     cb(retVal);
@@ -368,7 +350,7 @@ CassandraBackend.prototype.getStatistics = function(commit, cb) {
                     nofails: nofails,
                     latestcommit: commit.toString()
                 };
-                console.log("result: " + JSON.stringify(results, null,'\t'));
+                //console.log("result: " + JSON.stringify(results, null,'\t'));
                 cb(null, results);
 
             })
@@ -389,6 +371,14 @@ CassandraBackend.prototype.getStatistics = function(commit, cb) {
  */
 CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
     console.log("CALLING addResult");
+    // console.log();
+    // console.log(test);
+    // console.log();
+    // console.log(commit);
+    // console.log();
+    // console.log(result);
+    // console.log();
+    // console.log("END of print statments in addResult");
 	this.removePassedTest(test);
     cql = 'insert into results (test, tid, result) values (?, ?, ?);';
     tid = tidFromDate(new Date())
@@ -400,6 +390,7 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
         }
     });
     //with the current results, update the top k largest sizes/times
+    ///console.log("::::::> about to call addResultToLargestTable");
     this.addResultToLargestTable(commit, tid, result, test, cb);
 }
 
@@ -414,16 +405,18 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
 * @test that generated this result (TODO CHECK THIS)
 **/
 CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test, cb){
+    console.log("CALLING addResultToLargestTable");
     var result_parsed_array = this.parsePerfStats(result);
     for (var i = 0; i < result_parsed_array.length; i++){
         var current_parsed_result_obj = result_parsed_array[i];
         var types = current_parsed_result_obj["type"].split(":");
         var type = types[0]; //size or time
-        var type_name = type[1]; //total, wtzhtml, ... , wtraw, wtgzip
+        var type_name = types[1]; //total, wtzhtml, ... , wtraw, wtgzip
         var new_value = current_parsed_result_obj["value"];
         var tableName = "largest_"+type+"_"+type_name;
-        var select_cql = "SELECT (sorted_list_top_largest) FROM "+tableName+" WHERE commit = (?)";
-        var update_cql = "INSERT INTO "+tableName+" (commit, timeuuid, sorted_list_top_largest, sorted_list_corresponding_test) VALUES (?, ?, ?, ?)";
+        var select_cql = "SELECT * FROM "+tableName+" WHERE hash = ?;";
+        var update_cql = "INSERT INTO "+tableName+" (hash, tid, sorted_list_top_largest, sorted_list_corresponding_test) VALUES (?, ?, ?, ?);";
+        //console.log("right before the update to the database");
         this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value, test, cb);
     }
 }
@@ -438,9 +431,27 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
 * @cb: TODO: not sure if its neccesery. 
 **/
 CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test, cb){
+    //commit = '0x'+commit;
+    commit = new Buffer(commit);
+    var cb = function(err, result){
+        if(err){
+            console.log(err);
+        }else{
+            console.log("====> maybe Success?");
+        }
+    }
+    //console.log("===>about to UPDATE DB: addResultToLargestTable");
     var queryCB = function(err, results){
         //get the sorted list from the DB and then try to insert new_value if appropriate
+        //console.log(":_:_:_:_:_:_:__::::::> INSIDE THE actual queryCB!");
+        console.log();
+        console.log("new call to queryCB");
         if(err){
+            console.log("\n WENT INTO THE ERROR CASE!");
+            console.log("commit: ", commit)
+            console.log("results: ", results);
+            console.log("select query is: ", select_cql);
+            console.log("update query is: ", update_cql);
             console.log(err);
         } else if (results.rows.length > 1 ) {
             console.log("Panic: there should never be two rows with the same commit.");
@@ -449,51 +460,60 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
             var sorted_list_json_str;
             var sorted_list_test;
             var sorted_list_corresponding_test_json_str;
+            console.log("select query is: ", select_cql);
+            //console.log("results: ", results);
             if (!results || !results.rows || results.rows.length === 0) {
                 //if this is the first time we are adding results, then just add it!
                 sorted_list = [new_value];
                 sorted_list_json_str =  JSON.stringify(sorted_list);
                 sorted_list_test = [test];
                 sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
-                this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
-            } 
-
-            var result = results.rows[0];
-            var index_to_insert;
-            sorted_list = JSON.parse(result[3]);
-            sorted_list_test = JSON.parse(result[4]);
-            if(sorted_list.length < this.k){
-                //get index
-                index_to_insert = insertFunc.getIndexPositionToInsert(sorted_list, new_value);
-                //insert to sorted lists
-                sorted_list = insertFunc.insertIntoPosition(sorted_list, new_value, index_to_insert);
-                sorted_list_test = insertFunc.insertIntoPosition(sorted_list_test, test, index_to_insert);
-                //make json string
-                sorted_list_json_str = JSON.stringify(sorted_list);
-                sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
-                //update database
+                console.log("--------> sorted_list_corresponding_test_json_str: ", sorted_list_corresponding_test_json_str);
                 this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
             }else{
-                var smallest_element = sorted_list[0];
-                if(smallest_element < new_value){
+                var result = results.rows[0];
+                var index_to_insert;
+                // console.log("length: ", result.length);
+                // console.log("result: ", result[1]);
+                // console.log("result: ", result[2]);
+                //console.log("result[3]: ", result[3]);
+                sorted_list = JSON.parse(result[2]);
+                sorted_list_test = JSON.parse(result[1]);
+                if(sorted_list.length < this.k){
                     //get index
                     index_to_insert = insertFunc.getIndexPositionToInsert(sorted_list, new_value);
                     //insert to sorted lists
                     sorted_list = insertFunc.insertIntoPosition(sorted_list, new_value, index_to_insert);
                     sorted_list_test = insertFunc.insertIntoPosition(sorted_list_test, test, index_to_insert);
-                    //chopp of the old smallest element. Makes sure list remains length <= this.k
-                    sorted_list =  sorted_list.slice(1, sorted_list.length);
-                    sorted_list_test =  sorted_list.slice(1, sorted_list_test.length);
                     //make json string
                     sorted_list_json_str = JSON.stringify(sorted_list);
                     sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
+                    //update database
                     this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
+                }else{
+                    var smallest_element = sorted_list[0];
+                    if(smallest_element < new_value){
+                        //get index
+                        index_to_insert = insertFunc.getIndexPositionToInsert(sorted_list, new_value);
+                        //insert to sorted lists
+                        sorted_list = insertFunc.insertIntoPosition(sorted_list, new_value, index_to_insert);
+                        sorted_list_test = insertFunc.insertIntoPosition(sorted_list_test, test, index_to_insert);
+                        //chopp of the old smallest element. Makes sure list remains length <= this.k
+                        sorted_list =  sorted_list.slice(1, sorted_list.length);
+                        sorted_list_test =  sorted_list.slice(1, sorted_list_test.length);
+                        //make json string
+                        sorted_list_json_str = JSON.stringify(sorted_list);
+                        sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
+                        this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
+                    }
                 }
-            }
+            } 
+            console.log("finished calling updateLargestResultsTable");
         }
 
     }
     //get the largest values so far before updating them
+
     this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this)); 
 }
 
@@ -538,6 +558,34 @@ CassandraBackend.prototype.getFails = function(offset, limit, cb) {
      * ]
      */
     cb([]);
+}
+
+CassandraBackend.prototype.getTopLargest = function(){
+    var queryCB =  function(err, results){
+        console.log("Inside queryCB");
+        if (err){
+            console.log("ERROR!");
+            process.exit(0);
+        } else if (!results || !results.rows || results.rows.length === 0){
+            console.log("ERROR!");
+            process.exit(0);        
+        } else{
+            //console.log(results.rows.length);
+            for (var i = 0; i < results.rows.length; i++){
+                var result = results.rows[i];
+                console.log(result[0]);
+                console.log(result[1]);
+                obj = this.parsePerfStats(result[2])
+                console.log();
+                console.log(result[2]);
+                console.log();
+                console.log(obj);
+                process.exit(0);
+            }
+        }
+    }
+    var cql = "SELECT * FROM results";
+    this.client.execute(cql, [], this.consistencies.write, queryCB.bind(this)); 
 }
 
 
