@@ -33,11 +33,11 @@ function positionToInsertRec(array, element, i, j){
 }
 
 
-console.log( insert([], -1), " answer = ", [-1] );
-console.log( insert([0], -1), " answer = ", [-1, 0] );
-console.log( insert([0], 1), " answer = ", [0, 1] );
-console.log( insert([0, 1, 3], 2), "answer = ", [0, 1, 2, 3]);
-console.log( insert([0, 1, 1.5, 2, 3], 1.5), "answer = ", [0, 1, 1.5, 1.5, 2, 3]);
+// console.log( insert([], -1), " answer = ", [-1] );
+// console.log( insert([0], -1), " answer = ", [-1, 0] );
+// console.log( insert([0], 1), " answer = ", [0, 1] );
+// console.log( insert([0, 1, 3], 2), "answer = ", [0, 1, 2, 3]);
+// console.log( insert([0, 1, 1.5, 2, 3], 1.5), "answer = ", [0, 1, 1.5, 1.5, 2, 3]);
 
 exports.insert = insert;
 exports.insertIntoPosition = insertIntoPosition;
