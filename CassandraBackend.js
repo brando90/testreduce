@@ -433,19 +433,19 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
 CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test, cb){
     //commit = '0x'+commit;
     commit = new Buffer(commit);
-    var cb = function(err, result){
+    var cb = function(err, result){ //TODO is this cb neccesery?
         if(err){
             console.log(err);
         }else{
-            console.log("====> maybe Success?");
+            //console.log("====> maybe Success?");
         }
     }
     //console.log("===>about to UPDATE DB: addResultToLargestTable");
     var queryCB = function(err, results){
         //get the sorted list from the DB and then try to insert new_value if appropriate
         //console.log(":_:_:_:_:_:_:__::::::> INSIDE THE actual queryCB!");
-        console.log();
-        console.log("new call to queryCB");
+        //console.log();
+        //console.log("new call to queryCB");
         if(err){
             console.log("\n WENT INTO THE ERROR CASE!");
             console.log("commit: ", commit)
@@ -460,7 +460,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
             var sorted_list_json_str;
             var sorted_list_test;
             var sorted_list_corresponding_test_json_str;
-            console.log("select query is: ", select_cql);
+            // console.log("select query is: ", select_cql);
             //console.log("results: ", results);
             if (!results || !results.rows || results.rows.length === 0) {
                 //if this is the first time we are adding results, then just add it!
@@ -468,7 +468,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
                 sorted_list_json_str =  JSON.stringify(sorted_list);
                 sorted_list_test = [test];
                 sorted_list_corresponding_test_json_str = JSON.stringify(sorted_list_test);
-                console.log("--------> sorted_list_corresponding_test_json_str: ", sorted_list_corresponding_test_json_str);
+                //console.log("--------> sorted_list_corresponding_test_json_str: ", sorted_list_corresponding_test_json_str);
                 this.client.execute(update_cql, [commit, tid, sorted_list_json_str, sorted_list_corresponding_test_json_str], this.consistencies.write, cb);
             }else{
                 var result = results.rows[0];
@@ -479,6 +479,8 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
                 //console.log("result[3]: ", result[3]);
                 sorted_list = JSON.parse(result[2]);
                 sorted_list_test = JSON.parse(result[1]);
+                //console.log(sorted_list_test.length);
+                //console.log(sorted_list.length);
                 if(sorted_list.length < this.k){
                     //get index
                     index_to_insert = insertFunc.getIndexPositionToInsert(sorted_list, new_value);
@@ -508,7 +510,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
                     }
                 }
             } 
-            console.log("finished calling updateLargestResultsTable");
+            //console.log("finished calling updateLargestResultsTable");
         }
 
     }
