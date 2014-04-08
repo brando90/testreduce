@@ -14,19 +14,25 @@ function insert(array, element){
 * for examples look at the tests in the jUnit file.
 **/
 function insertIntoPosition(array, element, index){
-  array.splice(index, 0, element)
-  return array
+  if(array.length == 0){
+    return [element];
+  }
+  array.splice(index, 0, element);
+  return array;
 }
 
 /**
 * returns the index where to insert the element to the sorted array.
 **/
 function getIndexPositionToInsert(array, element){
-  return positionToInsertRec(array, element, 0, array.length - 1);
+  return  positionToInsertIterative(array, element);
+  //return positionToInsertRec(array, element, 0, array.length - 1);
 }
 
 /**
-* recursive function that finds the position to which to insert an element
+* recursive function that finds the position to which to insert an element.
+* careful with this function. If to many of these are called for large data sets, stack size might need to be increased.
+* use the iterative version instead.
 **/
 function positionToInsertRec(array, element, i, j){
   //if (j - i <= 1){
@@ -46,11 +52,20 @@ function positionToInsertRec(array, element, i, j){
   }
 }
 
-// console.log( insert([], -1), " answer = ", [-1] );
-// console.log( insert([0], -1), " answer = ", [-1, 0] );
-// console.log( insert([0], 1), " answer = ", [0, 1] );
-// console.log( insert([0, 1, 3], 2), "answer = ", [0, 1, 2, 3]);
-// console.log( insert([0, 1, 1.5, 2, 3], 1.5), "answer = ", [0, 1, 1.5, 1.5, 2, 3]);
+/**
+* recursive function that finds the position to which to insert an element.
+**/
+function positionToInsertIterative(array, element_to_insert){
+  var n = array.length;
+  var i;
+  for (i = 0; i < n; i++){
+    var current_element = array[i];
+    if(element_to_insert <= current_element){
+      return i;
+    }
+  }
+  return array.length + 1;
+}
 
 exports.insert = insert;
 exports.insertIntoPosition = insertIntoPosition;
