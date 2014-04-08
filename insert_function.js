@@ -53,7 +53,7 @@ function positionToInsertRec(array, element, i, j){
 }
 
 /**
-* recursive function that finds the position to which to insert an element.
+* function that finds the position to which to insert an element.
 **/
 function positionToInsertIterative(array, element_to_insert){
   var n = array.length;
