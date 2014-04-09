@@ -485,7 +485,7 @@ CassandraBackend.prototype.getTopLargest(commit, type_size_time, type_of_result,
             console.log("Panic: there should never be two rows or more with the same commit.");
         }if (!results || !results.rows || results.rows.length === 0) {
             console.log("results are currently empty");
-            cb(null, []);
+            cb(null, [], []);
         }else{
             var cdb_result = results.rows[0];
             var index_to_insert;
