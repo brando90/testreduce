@@ -494,6 +494,8 @@ CassandraBackend.prototype.getTopLargest(commit, type_size_time, type_of_result,
             cb(null, sorted_list, sorted_list_test);
         }
     }
+    var tableName = "largest_"+type_size_time+"_"+type_of_result;
+    var select_cql = "SELECT * FROM "+tableName+" WHERE hash = ?;";
     this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this));
 }
 
