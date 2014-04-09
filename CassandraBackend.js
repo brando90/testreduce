@@ -465,6 +465,38 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
     this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this)); 
 }
 
+/**
+* @param commit = the specific commit we want to query its top k results.
+* @param type_size_time = string either "size" or "time" (to query larges tin size or lowest in time).
+* @param type_of_result = is the specific type of result we want to query. It should only be any of the following
+* strings: (for time) total, wt2html, html2wt, or (for size) htmlraw, htmlgzip, wtraw, wtgzip.
+* @param cb = callback to call on the results from the database. First argument should be an err and the second
+* should expect a single array of at most k elements containing largest results so far. The thrid should also be
+* a single array expecting the tests corresponding to the values from the top k largest results. So for example,
+* array1[i] is the ith largest result and array2[i] is the test corresponding to that result (for the current commit).
+**/
+CassandraBackend.prototype.getTopLargest(commit, type_size_time, type_of_result, cb){
+    //get the largest values so far before updating them
+    var commit = new Buffer(commit);
+    var queryCB = function(err, results){
+        if (err){
+            console.log(err);
+        } else if (results.rows.length > 1 ) {
+            console.log("Panic: there should never be two rows or more with the same commit.");
+        }if (!results || !results.rows || results.rows.length === 0) {
+            console.log("results are currently empty");
+            cb(null, []);
+        }else{
+            var cdb_result = results.rows[0];
+            var index_to_insert;
+            var sorted_list = JSON.parse(cdb_result[2]);
+            var sorted_list_test = JSON.parse(cdb_result[1]);
+            cb(null, sorted_list, sorted_list_test);
+        }
+    }
+    this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this));
+}
+
 CassandraBackend.prototype.parsePerfStats = function(text) {
     var regexp = /<perfstat[\s]+type="([\w\:]+)"[\s]*>([\d]+)/g;
     var perfstats = [];
