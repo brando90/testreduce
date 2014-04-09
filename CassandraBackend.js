@@ -485,7 +485,7 @@ CassandraBackend.prototype.getTopLargest(commit, type_size_time, type_of_result,
         } else if (results.rows.length > 1 ) {
             var panic_err =  "Panic: there should never be two rows or more with the same commit.";
             console.log(panic_err);
-            cb(panic_err);
+            cb(panic_err, null, null);
         }if (!results || !results.rows || results.rows.length === 0) {
             console.log("results are currently empty");
             cb(null, [], []);
