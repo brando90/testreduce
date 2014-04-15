@@ -311,7 +311,7 @@ CassandraBackend.prototype.getStatistics = function(commit, cb) {
                     noskips++;
                     nofails++;
                   } else if(data > 1000) {
-                    noerrors++;
+                    noerrorso++;
                   } else if(data > 0) {
                     noerrors++;
                     nofails++;
@@ -396,12 +396,12 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
 CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test, cb){
     //commit = '0x'+commit;
     var commit = new Buffer(commit);
-    var cb = function(err, result){ //TODO is this cb neccesery?
-        if(err){
-            console.log(err);
-        }else{
-        }
-    }
+    // var cb = function(err, result){ //TODO is this cb neccesery?
+    //     if(err){
+    //         console.log(err);
+    //     }else{
+    //     }
+    // }
     var queryCB = function(err, results){
         if(err){
             console.log("\n WENT INTO THE ERROR CASE!");
@@ -459,7 +459,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
                 }
             } 
         }
-
+        cb(null); //TODO does it really need a cb?
     }
     //get the largest values so far before updating them
     this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this)); 
