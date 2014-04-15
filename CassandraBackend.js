@@ -21,13 +21,13 @@ function tidFromDate(date) {
 function CassandraBackend(name, config, callback) {
     var self = this;
 
-    //indicates how many largest values we are going to have
-    //at the moment hard coded.
-    //should be included in the settings file
-    this.k = 100;
-	
     this.name = name;
     this.config = config;
+
+    //indicates how many largest values we are going to have
+    //should be included in the settings file
+    this.num_largest_values_tracking = config.backend.num_largest_values_tracking;
+    
     // convert consistencies from string to the numeric constants
     var confConsistencies = config.backend.options.consistencies;
     this.consistencies = {
@@ -429,7 +429,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
                 var index_to_insert;
                 sorted_list = JSON.parse(result[2]);
                 sorted_list_test = JSON.parse(result[1]);
-                if(sorted_list.length < this.k){
+                if(sorted_list.length < this.num_largest_values_tracking){
                     //get index
                     index_to_insert = insertFunc.getIndexPositionToInsert(sorted_list, new_value);
                     //insert to sorted lists
@@ -448,7 +448,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
                         //insert to sorted lists
                         sorted_list = insertFunc.insertIntoPosition(sorted_list, new_value, index_to_insert);
                         sorted_list_test = insertFunc.insertIntoPosition(sorted_list_test, test, index_to_insert);
-                        //chopp of the old smallest element. Makes sure list remains length <= this.k
+                        //chopp of the old smallest element. Makes sure list remains length <= this.num_largest_values_tracking
                         sorted_list =  sorted_list.slice(1, sorted_list.length);
                         sorted_list_test =  sorted_list.slice(1, sorted_list_test.length);
                         //make json string
