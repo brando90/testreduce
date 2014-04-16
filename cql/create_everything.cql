@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS test_by_score (
     commit blob,
     delta int,
     score int,
-    test blob,
+    test blob,r
     PRIMARY KEY(commit, delta, test)
 );
 

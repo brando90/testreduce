@@ -284,8 +284,6 @@ CassandraBackend.prototype.getStatistics = function(commit, cb) {
     insert into test_by_score (commit, delta, test, score) values (textAsBlob('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739);
 
      */
-
- 
     var args = [], 
     results = {};
 
@@ -543,6 +541,16 @@ CassandraBackend.prototype.getFails = function(offset, limit, cb) {
      * ]
      */
     cb([]);
+}
+
+CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb){
+    //1)call the function from John's repo.
+    //2)process the three pieces of info we should partition:
+    // -onefailregressions
+    // -oneskipregressions
+    // -newfailsregressions
+    //3) feed them as return values to callback from ther server
+
 }
 
 // Node.js module exports. This defines what

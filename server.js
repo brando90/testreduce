@@ -499,6 +499,34 @@ var commitLinkData = function(commit, title, prefix) {
 };
 /* End- Helper functions for GET_regressions*/
 
+
+//
+var GET_flagged_regressions = function( req, res ){
+    var flagged_regressions_param; // = (onefailregressions|oneskipregressions|newfailsregressions)
+    var commit1;
+    var commit2;
+    var cb = function(err, onefailregressions, oneskipregressions, newfailsregressions){
+        if(err){
+            console.log(err);
+        }
+        //check for empty stuff
+        else{
+            switch(flagged_regressions_param){
+                case onefailregressions:
+                //do stuff
+                break;
+                case oneskipregressions:
+                //do stuff
+                break;
+                case newfailsregressions:
+                //do stuff
+                break;
+            }
+        }
+    };
+    backend.getFlaggedRegressions(commit1, commit2, cb);
+}
+
 // Make an app
 var app = express.createServer();
 
@@ -552,6 +580,9 @@ app.get( /^\/regressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_regress
 
 // Topfixes between two revisions.
 app.get( /^\/topfixes\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_topfixes );
+
+// Gets Flagged Regressions.
+app.get("(\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)", GET_flagged_regressions)
 
 // Distribution of fails
 app.get( /^\/failsDistr$/, GET_failsDistr );
