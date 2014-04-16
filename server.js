@@ -501,10 +501,11 @@ var commitLinkData = function(commit, title, prefix) {
 
 
 //
-var GET_flagged_regressions = function( req, res ){
-    var flagged_regressions_param; // = (onefailregressions|oneskipregressions|newfailsregressions)
+var GET_flagged_regressions = function(req, res ){
+    var flagged_regressions_param; // = o(onefailregressions|oneskipregressions|newfailsregressions)
     var commit1;
     var commit2;
+    console.log(req);
     var cb = function(err, onefailregressions, oneskipregressions, newfailsregressions){
         if(err){
             console.log(err);

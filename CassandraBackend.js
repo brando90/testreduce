@@ -27,7 +27,8 @@ function CassandraBackend(name, config, callback) {
     //indicates how many largest values we are going to have
     //should be included in the settings file
     this.num_largest_values_tracking = config.backend.num_largest_values_tracking;
-    
+    //this.num_largest_values_tracking = 100;
+
     // convert consistencies from string to the numeric constants
     var confConsistencies = config.backend.options.consistencies;
     this.consistencies = {
@@ -473,7 +474,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
 * a single array expecting the tests corresponding to the values from the top k largest results. So for example,
 * array1[i] is the ith largest result and array2[i] is the test corresponding to that result (for the current commit).
 **/
-CassandraBackend.prototype.getTopLargest(commit, type_size_time, type_of_result, cb){
+CassandraBackend.prototype.getTopLargest = function(commit, type_size_time, type_of_result, cb){
     //get the largest values so far before updating them
     var commit = new Buffer(commit);
     var queryCB = function(err, results){
@@ -543,15 +544,15 @@ CassandraBackend.prototype.getFails = function(offset, limit, cb) {
     cb([]);
 }
 
-CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb){
-    //1)call the function from John's repo.
-    //2)process the three pieces of info we should partition:
-    // -onefailregressions
-    // -oneskipregressions
-    // -newfailsregressions
-    //3) feed them as return values to callback from ther server
+// CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb){
+//     //1)call the function from John's repo (calcregressionfixes).
+//     //2)process the three pieces of info we should partition:
+//     // -onefailregressions
+//     // -oneskipregressions
+//     // -newfailsregressions
+//     //3) feed them as return values to callback from ther server
 
-}
+// }
 
 // Node.js module exports. This defines what
 // require('./CassandraBackend.js'); evaluates to.
