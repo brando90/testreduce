@@ -475,7 +475,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
 * a single array expecting the tests corresponding to the values from the top k largest results. So for example,
 * array1[i] is the ith largest result and array2[i] is the test corresponding to that result (for the current commit).
 **/
-CassandraBackend.prototype.getTopLargest(commit, type_size_time, type_of_result, cb){
+CassandraBackend.prototype.getTopLargest = function(commit, type_size_time, type_of_result, cb){
     //get the largest values so far before updating them
     var commit = new Buffer(commit);
     var queryCB = function(err, results){
