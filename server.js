@@ -372,6 +372,7 @@ var GET_regressions = function( req, res ) {
     /*put this in mock later */
 
     backend.getRegressions(r1, r2, urlPrefix, page, function(err, data, info) {
+      if(err) return res.end(JSON.stringify(err,null,'\t'));
       var rows = data;
 
       // console.log("passing: " + JSON.stringify(rows, null ,'\t'));
@@ -499,6 +500,21 @@ var commitLinkData = function(commit, title, prefix) {
 };
 /* End- Helper functions for GET_regressions*/
 
+/* Tester functions to be removed later */
+
+var TESTGET_tfArray = function(req, res) {
+    var numperpage = 100;
+    var page = req.params.page;
+    console.log("page: " + page + " numperPage: " + numperpage);
+
+    backend.getTFArray(function(err, result) {
+        res.end(JSON.stringify({
+            err: err,
+            array: result.splice(numperpage*page, numperpage*(page+1))
+        }))
+    })
+}
+/* End- Tester functions */
 
 //
 var GET_flagged_regressions = function(req, res ){
@@ -566,7 +582,7 @@ app.get( /^\/result\/([a-f0-9]*)\/([^\/]+)\/(.*)$/, resultWebInterface );
 // List of failures sorted by severity
 app.get( /^\/topfails\/(\d+)$/, failsWebInterface );
 // 0th page
-app.get( /^\/topfails$/, failsWebInterface );
+  app.get( /^\/topfails$/, failsWebInterface );
 
 // Overview of stats
 app.get( /^\/$/, statsWebInterface );
@@ -599,6 +615,8 @@ app.get( /^\/perfstats\/(\d+)$/, GET_perfStats );
 app.get( /^\/perfstats$/, GET_perfStats );
 app.get( /^\/pageperfstats\/([^\/]+)\/(.*)$/, GET_pagePerfStats );
 
+//testing purposes-- gets the top fails array
+app.get('/topfailsarray/:page', TESTGET_tfArray);
 // List of all commits
 app.use( '/commits', GET_commits );
 
