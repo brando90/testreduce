@@ -502,10 +502,12 @@ var commitLinkData = function(commit, title, prefix) {
 
 //
 var GET_flagged_regressions = function(req, res ){
-    var flagged_regressions_param; // = o(onefailregressions|oneskipregressions|newfailsregressions)
-    var commit1;
-    var commit2;
-    console.log(req);
+    if (req.params.length != 3){
+        console.log("Wrong url.")
+    }
+    var flagged_regressions_param = req.params[0]; // = o(onefailregressions|oneskipregressions|newfailsregressions)
+    var commit1 = req.params[1];
+    var commit2 = req.params[2];
     var cb = function(err, onefailregressions, oneskipregressions, newfailsregressions){
         if(err){
             console.log(err);
@@ -583,7 +585,9 @@ app.get( /^\/regressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_regress
 app.get( /^\/topfixes\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_topfixes );
 
 // Gets Flagged Regressions.
-app.get("(\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)", GET_flagged_regressions)
+//app.get( /^(\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)$/ , GET_flagged_regressions)
+//app.get( /^(\/[onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)$/ , GET_flagged_regressions)
+app.get( /^\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/(\w+)\/(\w+)$/ , GET_flagged_regressions)
 
 // Distribution of fails
 app.get( /^\/failsDistr$/, GET_failsDistr );

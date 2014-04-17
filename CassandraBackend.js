@@ -544,15 +544,16 @@ CassandraBackend.prototype.getFails = function(offset, limit, cb) {
     cb([]);
 }
 
-// CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb){
-//     //1)call the function from John's repo (calcregressionfixes).
-//     //2)process the three pieces of info we should partition:
-//     // -onefailregressions
-//     // -oneskipregressions
-//     // -newfailsregressions
-//     //3) feed them as return values to callback from ther server
+CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb){
+    //1)call the function from John's repo (calcregressionfixes).
+    //2)process the three pieces of info we should partition:
+    // -onefailregressions
+    // -oneskipregressions
+    // -newfailsregressions
+    //3) feed them as return values to callback from ther server
+    console.log("was called!");
 
-// }
+}
 
 // Node.js module exports. This defines what
 // require('./CassandraBackend.js'); evaluates to.
