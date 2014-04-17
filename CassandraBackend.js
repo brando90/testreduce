@@ -735,7 +735,6 @@ CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb
   //   old_skips: 0
   // }
 
-
     console.log("was called!");
     //filters the data from the regressions and sends it to the original server Call Back functionn 
     var sendCorrespondingDataToServersCallBackFunc = function(err, regData, fixData){
@@ -774,14 +773,23 @@ CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb
     this.calcregressionfixes(commit1, commit2, sendCorrespondingDataToServersCB);
 }
 
+//TODO: note the scoring might change and thus, this function might need to change when returns true and false
 CassandraBackend.prototype.hasOnefailregressions = function(infoObj){
-    return true; //TODO
+    if (infoObj.fails == 1){
+        return true;
+    }else{
+        return false;
+    }
 }
 
+//TODO: note the scoring might change and thus, this function might need to change when returns true and false
 CassandraBackend.prototype.hasOneskipregressions = function(infoObj){
-    return false; //TODO
+    if (infoObj.skips == 1){
+        return true;
+    }else{
+        return false;
+    }
 }
-
 
 var regressionsHeaderData = ['Title', 'New Commit', 'Errors|Fails|Skips', 'Old Commit', 'Errors|Fails|Skips'];
 
