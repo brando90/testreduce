@@ -345,7 +345,7 @@ CassandraBackend.prototype.getStatistics = function(commit, cb) {
  *    timestamp: <git commit timestamp date object>
  * @param cb callback (err) err or null
  */
-CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
+CassandraBackend.prototype.addResult = function(test, commit, result) {
 	this.removePassedTest(test);
     cql = 'insert into results (test, tid, result) values (?, ?, ?);';
     tid = tidFromDate(new Date())
@@ -356,7 +356,7 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
         } else {
         }
     });
-    this.addResultToLargestTable(commit, tid, result, test, cb);
+    this.addResultToLargestTable(commit, tid, result, test);
 }
 
 
@@ -369,7 +369,7 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
 * @param result the result string in XML form
 * @test that generated this result (TODO CHECK THIS)
 **/
-CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test, cb){
+CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test){
     var result_parsed_array = this.parsePerfStats(result);
     for (var i = 0; i < result_parsed_array.length; i++){
         var current_parsed_result_obj = result_parsed_array[i];
@@ -380,7 +380,7 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
         var tableName = "largest_"+type+"_"+type_name;
         var select_cql = "SELECT * FROM "+tableName+" WHERE hash = ?;";
         var update_cql = "INSERT INTO "+tableName+" (hash, tid, sorted_list_top_largest, sorted_list_corresponding_test) VALUES (?, ?, ?, ?);";
-        this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value, test, cb);
+        this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value, test);
     }
 }
 
@@ -393,15 +393,15 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
 * @new_value: the new candidate value to add to the database (its added if its larger than any of the top k current things in the databse).
 * @cb: TODO: not sure if its neccesery. 
 **/
-CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test, cb){
+CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test){
     //commit = '0x'+commit;
     var commit = new Buffer(commit);
-    // var cb = function(err, result){ //TODO is this cb neccesery?
-    //     if(err){
-    //         console.log(err);
-    //     }else{
-    //     }
-    // }
+    var cb = function(err, result){ //TODO is this cb neccesery?
+        if(err){
+            console.log(err);
+        }else{
+        }
+    }
     var queryCB = function(err, results){
         if(err){
             console.log("\n WENT INTO THE ERROR CASE!");
