@@ -513,7 +513,7 @@ var extractESF = function (rows, cb) {
  *    timestamp: <git commit timestamp date object>
  * @param cb callback (err) err or null
  */
-CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
+CassandraBackend.prototype.addResult = function(test, commit, result) {
     this.latestRevision.commit = commit;
 	this.removePassedTest(test);
     cql = 'insert into results (test, tid, result) values (?, ?, ?);';
@@ -524,7 +524,7 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
             console.log(err);
         } else {}
     });
-    this.addResultToLargestTable(commit, tid, result, test, cb);
+    this.addResultToLargestTable(commit, tid, result, test);
 }
 
 
@@ -537,7 +537,7 @@ CassandraBackend.prototype.addResult = function(test, commit, result, cb) {
 * @param result the result string in XML form
 * @test that generated this result (TODO CHECK THIS)
 **/
-CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test, cb){
+CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result, test){
     var result_parsed_array = this.parsePerfStats(result);
     for (var i = 0; i < result_parsed_array.length; i++){
         var current_parsed_result_obj = result_parsed_array[i];
@@ -548,7 +548,7 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
         var tableName = "largest_"+type+"_"+type_name;
         var select_cql = "SELECT * FROM "+tableName+" WHERE hash = ?;";
         var update_cql = "INSERT INTO "+tableName+" (hash, tid, sorted_list_top_largest, sorted_list_corresponding_test) VALUES (?, ?, ?, ?);";
-        this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value, test, cb);
+        this.updateLargestResultsTable(select_cql, update_cql, commit, tid, new_value, test);
     }
 }
 
@@ -561,15 +561,15 @@ CassandraBackend.prototype.addResultToLargestTable= function(commit, tid, result
 * @new_value: the new candidate value to add to the database (its added if its larger than any of the top k current things in the databse).
 * @cb: TODO: not sure if its neccesery. 
 **/
-CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test, cb){
+CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, update_cql, commit, tid, new_value, test){
     //commit = '0x'+commit;
     var commit = new Buffer(commit);
-    // var cb = function(err, result){ //TODO is this cb neccesery?
-    //     if(err){
-    //         console.log(err);
-    //     }else{
-    //     }
-    // }
+    var cb = function(err, result){ //TODO is this cb neccesery?
+        if(err){
+            console.log(err);
+        }else{
+        }
+    }
     var queryCB = function(err, results){
         if(err){
             console.log("\n WENT INTO THE ERROR CASE!");
@@ -627,7 +627,7 @@ CassandraBackend.prototype.updateLargestResultsTable = function(select_cql, upda
                 }
             } 
         }
-        cb(null); //TODO does it really need a cb?
+        //cb(null); //TODO does it really need a cb?
     }
     //get the largest values so far before updating them
     this.client.execute(select_cql, [commit], this.consistencies.write, queryCB.bind(this)); 
@@ -713,83 +713,7 @@ CassandraBackend.prototype.getFails = function (offset, limit, cb) {
     cb([]);
 }
 
-CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb){
-    //1)call the function from John's repo (calcregressionfixes).
-    //2)process the three pieces of info we should partition:
-    // -onefailregressions
-    // -oneskipregressions
-    // -newfailsregressions
-    //3) feed them as return values to callback from ther server
-  //
-  // infoObj is the following: 
-  //
-  // var res = {
-  //   test: test, 
-  //   score1: score1,
-  //   score2: score2,
-  //   errors: 0,
-  //   fails: 0,
-  //   skips: 0,
-  //   old_errors: 0,
-  //   old_fails: 0,
-  //   old_skips: 0
-  // }
 
-    console.log("was called!");
-    //filters the data from the regressions and sends it to the original server Call Back functionn 
-    var sendCorrespondingDataToServersCallBackFunc = function(err, regData, fixData){
-        if (err){
-            cb(err, null, null, null);
-        }else{
-            if (regData.length == 0){
-                cb("Error: no data in regression data (regData).", null , null, null);
-            }
-            var onefailregressions = [];
-            var oneskipregressions = [];
-            var newfailsregressions = [];
-            var n = regData.length;
-            //go through the regData, and for each piece of test information collect it, depending on which of the following condition they satisfy:
-            //  1)onefailregressions
-            //  2)oneskipregressions or,
-            //  3)newfailsregressions
-            for (var i = 0; i < n; i++){
-                var infoObj = regData[i];
-                if ( this.hasOnefailregressions(infoObj) ){
-                    onefailregressions.push(infoObj);
-                }else if ( this.hasOneskipregressions(infoObj) ){
-                    oneskipregressions.push(infoObj);
-                }else{
-                    newfailsregressions.push(infoObj);
-                }
-            }
-            if(onefailregressions.length == 0 || oneskipregressions.length == 0 || newfailsregressions.length == 0){
-                cb("Error: no useful data in regression data (regData).", null, null, null);
-            }else{
-                cb(null, onefailregressions, oneskipregressions, newfailsregressions);
-            }
-        }
-    }
-    //get the regression fixes and send them to be processed by ther server callback.
-    this.calcregressionfixes(commit1, commit2, sendCorrespondingDataToServersCB);
-}
-
-//TODO: note the scoring might change and thus, this function might need to change when returns true and false
-CassandraBackend.prototype.hasOnefailregressions = function(infoObj){
-    if (infoObj.fails == 1){
-        return true;
-    }else{
-        return false;
-    }
-}
-
-//TODO: note the scoring might change and thus, this function might need to change when returns true and false
-CassandraBackend.prototype.hasOneskipregressions = function(infoObj){
-    if (infoObj.skips == 1){
-        return true;
-    }else{
-        return false;
-    }
-}
 
 var regressionsHeaderData = ['Title', 'New Commit', 'Errors|Fails|Skips', 'Old Commit', 'Errors|Fails|Skips'];
 
@@ -840,6 +764,8 @@ var regressionHelper = function(test, score1, score2) {
 /**
 This method calculates all the scores data from the tests table
 **/
+// 33471172030bb001557200d193b402cfdf4eeaaf
+// http://localhost:8001/onefailregressions/between/33471172030bb001557200d193b402cfdf4eeaaf/33471172030bb001557200d193b402cfdf4eeaaf
 function calcRegressionFixes(r1, r2, cb) {
     //var data = mock.testdata;
 
@@ -852,23 +778,30 @@ function calcRegressionFixes(r1, r2, cb) {
     var fixData = [];
 
     var queries = [{
-        query: 'select test, score from test_by_score where commit = ?',
+        //query: 'select test, score from test_by_score where commit = ?',
+        //query: 'select * from test_by_score where commit = ?',
+        query: 'select * from test_by_score',
         params: [new Buffer(r1)]
     }, {
-        query: 'select test, score from test_by_score where commit = ?',
+        //query: 'select test, score from test_by_score where commit = ?',
+        //query: 'select * from test_by_score where commit = ?',
+        query: 'select * from test_by_score',
         params: [new Buffer(r2)]
     }];
 
+    console.log("commit1 r1: ", r1);
+    console.log("commit2 r2: ", r2);
     var firstResults = {};
     var queryCB = function (err, results) {
         if (err) {
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
-            //console.log( 'no seen commits, error in database' );
+            console.log( "Error thrown by: calcRegressionFixes => queryCB1" );
             cb("no seen commits, error in database");
         } else {
             firstResults = results.rows;
             this.client.execute(queries[1].query, queries[1].params, this.consistencies.write, queryCB2.bind(this));
+            //this.client.execute(queries[1].query, queries[1].params, this.consistencies.write, queryCB2.bind(this));
         }
     };
     var queryCB2 = function (err, results) {
@@ -876,14 +809,19 @@ function calcRegressionFixes(r1, r2, cb) {
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
             //console.log( 'no seen commits, error in database' );
+            console.log("Error thrown by calcRegressionFixes => queryCB2");
             cb("no seen commits, error in database");
         } else {
             var data = results.rows;
             //console.log("results: " + JSON.stringify(results, null, '\t'));
             //go through firstResults, and for each of its tests find the corresponding one
             //in the results rows, and for each of them that are regressions, push it to the regData, else fixData
+            console.log("firstresult[0][0]: " + firstResults[0][0].toString());
+            cb(null, [], []); //uncomment for deployment
+            return; //uncomment for deployment
             for(var y in firstResults) {
-                console.log("result: " + firstResults[y][0].toString());
+                //console.log(y);
+                //console.log("result: " + firstResults[y][0].toString());
                 for(var x in data) {
                     if(data[x][0].toString() === firstResults[y][0].toString()) {
                       // var ret = {
@@ -904,7 +842,10 @@ function calcRegressionFixes(r1, r2, cb) {
         }
     };
 
-    this.client.execute(queries[0].query, queries[0].params, this.consistencies.write, queryCB.bind(this));
+    //this.client.execute(queries[0].query, queries[0].params, this.consistencies.write, queryCB.bind(this));
+    this.client.execute(queries[0].query, [], this.consistencies.write, queryCB.bind(this));
+    //this.client.execute(queries[0].query, [new Buffer("33333437313137323033306262303031353537323030643139336234303263666466346565616166")], this.consistencies.write, queryCB.bind(this));
+
     // for(var y in data) {
     //   var x = data[y];
     //   var newtest = statsScore(x.skips, x.fails, x.errors);
@@ -989,6 +930,93 @@ CassandraBackend.prototype.getFixes = function (r1, r2, prefix, page, cb) {
         });
     });
 }
+
+CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb){
+    //1)call the function from John's repo (calcRegressionFixes).
+    //2)process the three pieces of info we should partition:
+    // -onefailregressions
+    // -oneskipregressions
+    // -newfailsregressions
+    //3) feed them as return values to callback from ther server
+  //
+  // infoObj is the following: 
+  //
+  // var res = {
+  //   test: test, 
+  //   score1: score1,
+  //   score2: score2,
+  //   errors: 0,
+  //   fails: 0,
+  //   skips: 0,
+  //   old_errors: 0,
+  //   old_fails: 0,
+  //   old_skips: 0
+  // }
+
+    //filters the data from the regressions and sends it to the original server Call Back functionn 
+    var sendCorrespondingDataToServersCallBackFunc = function(err, regData, fixData){
+        if (err){
+            cb(err, null, null, null);
+        }else{
+            //uncomment for production, can be commented for development time.
+            if (regData.length == 0){
+                console.log("executed checking if regData was empty");
+                cb("Error Empty: no data in regression data (regData).", null , null, null);
+            }
+            var onefailregressions = [];
+            var oneskipregressions = [];
+            var newfailsregressions = [];
+            var n = regData.length;
+            //go through the regData, and for each piece of test information collect it, depending on which of the following condition they satisfy:
+            //  1)onefailregressions
+            //  2)oneskipregressions or,
+            //  3)newfailsregressions
+            for (var i = 0; i < n; i++){
+                var infoObj = regData[i];
+                if ( this.hasOnefailregressions(infoObj) ){
+                    onefailregressions.push(infoObj);
+                }else if ( this.hasOneskipregressions(infoObj) ){
+                    oneskipregressions.push(infoObj);
+                }else{
+                    newfailsregressions.push(infoObj);
+                }
+            }
+
+            if(onefailregressions.length == 0 || oneskipregressions.length == 0 || newfailsregressions.length == 0){
+                console.log("Error Empty: onefailregressions, oneskipregressions, newfailsregressions.");
+                cb("Error: no useful data in regression data (regData).", null, null, null);
+            }else{
+                cb(null, onefailregressions, oneskipregressions, newfailsregressions);
+            }
+        }
+    }
+    //get the regression fixes and send them to be processed by ther server callback.
+    var calc = calcRegressionFixes.bind(this);
+    calc(commit1, commit2, sendCorrespondingDataToServersCallBackFunc);
+}
+
+//TODO: note the scoring might change and thus, this function might need to change when returns true and false
+CassandraBackend.prototype.hasOnefailregressions = function(infoObj){
+    if (infoObj.fails == 1){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+//TODO: note the scoring might change and thus, this function might need to change when returns true and false
+CassandraBackend.prototype.hasOneskipregressions = function(infoObj){
+    if (infoObj.skips == 1){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
+    this.client.execute(cql, args, this.consistencies.write, cb);
+}
+
 // Node.js module exports. This defines what
 // require('./CassandraBackend.js'); evaluates to.
 module.exports = CassandraBackend;

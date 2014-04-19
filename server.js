@@ -516,33 +516,78 @@ var TESTGET_tfArray = function(req, res) {
 }
 /* End- Tester functions */
 
-//
+//GET FLAGGED REGRESSIONS
+//helper functions
+
+var gethtmlStr_OneFailRegressions = function(onefailregressions){
+    var head = "<head><meta charset=\"UTF-8\"><link type=\'text\/css\' href=\"\/static\/style.css\" rel=\"stylesheet\"><\/head>";
+    return head;
+
+}
+
+//Main function
+// ROWS[i]:  e4aca3cbe9c892fc93f45e2a48aa76484c18acbb
+// ROWS[i]:  33471172030bb001557200d193b402cfdf4eeaaf
 var GET_flagged_regressions = function(req, res ){
     if (req.params.length != 3){
         console.log("Wrong url.")
     }
+    // var cql = "select * from commits;";
+    // var args = [];
+    // var cb_tmp = function(err, results){
+    //     if (err){
+    //         console.log("ERROR ON DEBUG");
+    //     }else{
+    //         var rows = results.rows;
+    //         for (var i = 0; i<rows.length; i++){
+    //             console.log("ROWS[i]: ", rows[i][0].toString());
+    //         }
+    //     }
+    // };
+    // backend.callDBdebug(cql, args, cb_tmp);
     var flagged_regressions_param = req.params[0]; // = o(onefailregressions|oneskipregressions|newfailsregressions)
     var commit1 = req.params[1];
     var commit2 = req.params[2];
+    console.log("commit1 from url: ", commit1);
+    console.log("commit2 from url: ", commit2);
     var cb = function(err, onefailregressions, oneskipregressions, newfailsregressions){
-        if(err){
+        //if(err){ //uncomment for deployment
+        console.log("===> inside callback from server.js");
+        if(false){ //comment for deployment
+            console.log("Error: in GET_flagged_regressions");
             console.log(err);
         }
         //check for empty stuff
         else{
+            var res_string;
+            console.log("-----> before switch statment");
+            console.log(flagged_regressions_param);
             switch(flagged_regressions_param){
-                case onefailregressions:
-                //do stuff
-                break;
-                case oneskipregressions:
-                //do stuff
-                break;
-                case newfailsregressions:
-                //do stuff
-                break;
+                case "onefailregressions":
+                    console.log(":::> CASE: onefailregressions");
+                    //display onefailregressions
+                    res_string = gethtmlStr_OneFailRegressions(onefailregressions);
+                    break;
+                case "oneskipregressions":
+                    //do oneskipregressions
+                    res_string = gethtmlStr_OneFailRegressions(oneskipregressions);
+                    break;
+                case "newfailsregressions":
+                    //do newfailsregressions
+                    res_string = gethtmlStr_OneFailRegressions(newfailsregressions);
+                    break;
+                default:
+                    //error
+                    console.log("Error: On DEFAULT case of switch statment");
+                    break;
             }
+            console.log(res_string);
+            console.log("---++++===> DOING response.write()");
+            res.write(res_string);
+            res.end("END");
         }
     };
+    console.log("./ called backend.getFlaggedRegressions");
     backend.getFlaggedRegressions(commit1, commit2, cb);
 }
 
