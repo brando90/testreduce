@@ -621,6 +621,10 @@ var GET_oneSkipRegressions = displayOneDiffRegressions.bind(
     ['one fail regressions', 'one new semantic diff, previously perfect', 'onefail']
 );
 
+var DO_DEBUG = function(req, res){
+	backend.callDBdebug();
+}
+
 
 // Make an app
 var app = express.createServer();
@@ -645,6 +649,9 @@ coordApp.use( express.bodyParser() );
 app.get(/^\/robots.txt$/, function ( req, res ) {
     res.end( "User-agent: *\nDisallow: /\n" );
 });
+
+//debug
+app.( /^\/debug, DO_DEBUG);
 
 // Main interface
 app.get( /^\/results(\/([^\/]+))?$/, resultsWebInterface );
