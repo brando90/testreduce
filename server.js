@@ -571,7 +571,7 @@ var GET_newFailsRegressions = function(req, res) {
             displayPageList.bind(res, data, makeOneDiffRegressionRow, null, rows);
         }
     };
-    backend.getFlaggedRegressions(r1, r2, cb); //TODO this function doesn't exist yet.
+    backend.getNewFailsRegressions(r1, r2, cb); //TODO this function doesn't exist yet.
 };
 
 var displayOneDiffRegressions = function(numFails, numSkips, subheading, headingLinkData, req, res){
@@ -607,16 +607,7 @@ var displayOneDiffRegressions = function(numFails, numSkips, subheading, heading
             displayPageList.bind(res, data, makeOneDiffRegressionRow, null, rows);
         }
     };
-    var typeOp;
-    if (numFails == 1 && numSkips == 0){
-        typeOp = "numFails";
-    }else if (numFails == 0 && num Skips == 1){
-        typeOp = "numSkips";
-    }else{
-        console.log("Panic: error that should not exist. Handler doesn't exist.");
-        res.send(err.toString(), 500);
-    }
-    backend.getFlaggedRegressions(r1, r2, typeOp, cb);
+    backend.getOneDiffRegressions(r1, r2, numFails, numSkips, cb);
     //db.query (dbNumOneDiffRegressionsBetweenRevs, [r2, r1, numFails, numSkips],);
 };
 
