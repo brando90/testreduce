@@ -652,7 +652,16 @@ app.get( /^\/topfixes\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_topfixes )
 // Gets Flagged Regressions.
 //app.get( /^(\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)$/ , GET_flagged_regressions)
 //app.get( /^(\/[onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)$/ , GET_flagged_regressions)
-app.get( /^\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/(\w+)\/(\w+)$/ , GET_flagged_regressions)
+//app.get( /^\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/(\w+)\/(\w+)$/ , GET_flagged_regressions)
+
+// Regressions between two revisions that introduce one semantic error to a perfect page.
+app.get(/^\/onefailregressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_oneFailRegressions );
+
+// Regressions between two revisions that introduce one syntactic error to a perfect page.
+app.get(/^\/oneskipregressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_oneSkipRegressions );
+
+// Regressions between two revisions that introduce senantic errors (previously only syntactic diffs).
+app.get(/^\/newfailsregressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_newFailsRegressions );
 
 // Distribution of fails
 app.get( /^\/failsDistr$/, GET_failsDistr );
