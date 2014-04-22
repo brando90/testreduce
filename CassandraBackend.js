@@ -1041,6 +1041,7 @@ CassandraBackend.prototype.isNewFail = function(dataObj){
     return cond1 && cond2;
 }
 
+
 CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
     var cb function(err, result){
         if (err){
