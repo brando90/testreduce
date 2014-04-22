@@ -961,6 +961,9 @@ CassandraBackend.prototype.getFixes = function (r1, r2, prefix, page, cb) {
 CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, numFails, numSkips, cb){
     //get the regression fixes and send them to be processed by ther server callback.
     var calc = calcRegressionFixes.bind(this);
+    if (commit1 == "DEBUG"){
+        this.getOneDiffRegressionsDEBUG(commit1, commit2, numFails, numSkips, cb);
+    }
     calc(commit1, commit2, function(err, reg, fix){
         //filters the data from the regressions and sends it to the original server Call Back functionn 
         if (err){
@@ -975,7 +978,7 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
             //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
             //  1)onefailregressions
             //  2)oneskipregressions or,
-            for (var i = 0; i < reg.length;; i++){
+            for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
                 if ( dataObj.fails == numFails && dataObj.skips == numSkips ){
                     collectedReg.push(dataObj);
@@ -1014,7 +1017,7 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
             //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
             //  1)onefailregressions
             //  2)oneskipregressions or,
-            for (var i = 0; i < reg.length;; i++){
+            for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
                 if ( this.isNewFail(dataObj) ){
                     collectedReg.push(dataObj);
@@ -1040,6 +1043,31 @@ CassandraBackend.prototype.isNewFail = function(dataObj){
 
 CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
     this.client.execute(cql, args, this.consistencies.write, cb);
+}
+
+/*
+    insert into test_by_score (commit, delta, test, score) values (textAsBlob('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 28487);
+    insert into test_by_score (commit, delta, test, score) values (textAsBlob('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 192);
+    insert into test_by_score (commit, delta, test, score) values (textAsBlob('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739);
+    
+    insert into test_by_score (commit, delta, test, score) values (textAsBlob('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500);
+    insert into test_by_score (commit, delta, test, score) values (textAsBlob('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 1050);
+    insert into test_by_score (commit, delta, test, score) values (textAsBlob('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 100);
+*/
+CassandraBackend.prototype.getOneDiffRegressionsDEBUG = function(commit1, commit2, numFails, numSkips, cb){
+    var reg = [];
+    //commit, 0, textAsBlob('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500);
+    var res = {
+        test: '{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}', 
+        score1: score1,
+        score2: score2,
+        errors: 0,
+        fails: 1,
+        skips: 0,
+        old_errors: 0,
+        old_fails: 0,
+        old_skips: 0
+    }
 }
 
 // Node.js module exports. This defines what

@@ -621,7 +621,6 @@ var GET_oneSkipRegressions = displayOneDiffRegressions.bind(
     ['one fail regressions', 'one new semantic diff, previously perfect', 'onefail']
 );
 
-
 // Make an app
 var app = express.createServer();
 
