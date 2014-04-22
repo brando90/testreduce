@@ -1042,32 +1042,28 @@ CassandraBackend.prototype.isNewFail = function(dataObj){
 }
 
 CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
-    this.client.execute(cql, args, this.consistencies.write, cb);
-}
-
-/*
-    insert into test_by_score (commit, delta, test, score) values (textAsBlob('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 28487);
-    insert into test_by_score (commit, delta, test, score) values (textAsBlob('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 192);
-    insert into test_by_score (commit, delta, test, score) values (textAsBlob('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739);
+    var cb function(err, result){
+        if (err){
+            console.log("ERROR");
+            console.log(err);
+        }else{
+            console.log("Insertion Done!");
+        }
+    };
+    var cql = "insert into test_by_score (commit, delta, test, score) values (?, ?, ?, ?);";
+    args1 = [new Buffer('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 28487];
+    args2 = [new Buffer('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 192];
+    args3 = [new Buffer('0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739];
     
-    insert into test_by_score (commit, delta, test, score) values (textAsBlob('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500);
-    insert into test_by_score (commit, delta, test, score) values (textAsBlob('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 1050);
-    insert into test_by_score (commit, delta, test, score) values (textAsBlob('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, textAsBlob('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 100);
-*/
-CassandraBackend.prototype.getOneDiffRegressionsDEBUG = function(commit1, commit2, numFails, numSkips, cb){
-    var reg = [];
-    //commit, 0, textAsBlob('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500);
-    var res = {
-        test: '{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}', 
-        score1: score1,
-        score2: score2,
-        errors: 0,
-        fails: 1,
-        skips: 0,
-        old_errors: 0,
-        old_fails: 0,
-        old_skips: 0
-    }
+    args4 = [new Buffer('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500];
+    args5 = [new Buffer('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 1050];
+    args6 = [new Buffer('bdb14fbe076f6b94444c660e36a400151f26fc6f'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 100];
+    this.client.execute(cql, args1, this.consistencies.write, cb);
+    this.client.execute(cql, args2, this.consistencies.write, cb);
+    this.client.execute(cql, args3, this.consistencies.write, cb);
+    this.client.execute(cql, args4, this.consistencies.write, cb);
+    this.client.execute(cql, args5, this.consistencies.write, cb);
+    this.client.execute(cql, args6, this.consistencies.write, cb);
 }
 
 // Node.js module exports. This defines what
