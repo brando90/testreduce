@@ -362,6 +362,7 @@ var GET_skipsDistr = function( req, res ) {
 
 
 var GET_regressions = function( req, res ) {
+    console.log("===> calling GET_regressions!");
     var r1 = req.params[0];
     var r2 = req.params[1];
 
@@ -372,12 +373,15 @@ var GET_regressions = function( req, res ) {
     /*put this in mock later */
 
     backend.getRegressions(r1, r2, urlPrefix, page, function(err, data, info) {
-      if(err) return res.end(JSON.stringify(err,null,'\t'));
-      var rows = data;
+        console.log("------------------------------> CALLBACK AT GET REGRESSIONS");
+        if(err){
+            console.log("ERROR before stringigy get regressions");
+            return res.end(JSON.stringify(err,null,'\t'));
+        }
+        var rows = data;
 
-      // console.log("passing: " + JSON.stringify(rows, null ,'\t'));
-      displayPageList(res, info, makeRegressionRow, null, rows  );
-
+        // console.log("passing: " + JSON.stringify(rows, null ,'\t'));
+        displayPageList(res, info, makeRegressionRow, null, rows  );
     });
 };
 
@@ -423,7 +427,7 @@ var displayPageList = function(res, data, makeRow, err, rows){
     if ( err ) {
         res.send( err.toString(), 500 );
     } else if ( !rows || rows.length <= 0 ) {
-		console.log("CALLING 404");
+		console.log("CALLING 404. Called in displayPageList function.");
         res.send( "No entries found", 404 );
     } else {
         var tableRows = [];
