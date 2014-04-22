@@ -976,7 +976,7 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
             //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
             //  1)onefailregressions
             //  2)oneskipregressions or,
-            for (var i = 0; i < reg.length;; i++){
+            for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
                 if ( dataObj.fails == numFails && dataObj.skips == numSkips ){
                     collectedReg.push(dataObj);
@@ -1015,7 +1015,7 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
             //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
             //  1)onefailregressions
             //  2)oneskipregressions or,
-            for (var i = 0; i < reg.length;; i++){
+            for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
                 if ( this.isNewFail(dataObj) ){
                     collectedReg.push(dataObj);
