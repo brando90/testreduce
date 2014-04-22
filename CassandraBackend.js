@@ -894,7 +894,7 @@ CassandraBackend.prototype.getRegressions = function (r1, r2, prefix, page, cb) 
             //console.log("json: " + JSON.stringify(regressions, null, '\t'));
 
             cb(null, regressions, mydata);
-    });
+        });
     });
 }
 
@@ -938,66 +938,64 @@ CassandraBackend.prototype.getFlaggedRegressions = function(commit1, commit2, cb
     // -oneskipregressions
     // -newfailsregressions
     //3) feed them as return values to callback from ther server
-  //
-  // infoObj is the following: 
-  //
-  // var res = {
-  //   test: test, 
-  //   score1: score1,
-  //   score2: score2,
-  //   errors: 0,
-  //   fails: 0,
-  //   skips: 0,
-  //   old_errors: 0,
-  //   old_fails: 0,
-  //   old_skips: 0
-  // }
+    //
+    // dataObj is the following: 
+    //
+    // var res = {
+    //   test: test, 
+    //   score1: score1,
+    //   score2: score2,
+    //   errors: 0,
+    //   fails: 0,
+    //   skips: 0,
+    //   old_errors: 0,
+    //   old_fails: 0,
+    //   old_skips: 0
+    // }
 
-    //filters the data from the regressions and sends it to the original server Call Back functionn 
-    var sendCorrespondingDataToServersCallBackFunc = function(err, regData, fixData){
+    //get the regression fixes and send them to be processed by ther server callback.
+    var calc = calcRegressionFixes.bind(this);
+    calc(commit1, commit2, function(err, reg, fix){
+        //filters the data from the regressions and sends it to the original server Call Back functionn 
         if (err){
-            cb(err, null, null, null);
+            cb(err, null);
         }else{
             //uncomment for production, can be commented for development time.
-            if (regData.length == 0){
-                console.log("executed checking if regData was empty");
-                cb("Error Empty: no data in regression data (regData).", null , null, null);
+            if (reg.length == 0){
+                console.log("executed checking if reg was empty");
+                cb("Error Empty: no data in regression data (reg).", null , null, null);
             }
             var onefailregressions = [];
             var oneskipregressions = [];
-            var newfailsregressions = [];
-            var n = regData.length;
-            //go through the regData, and for each piece of test information collect it, depending on which of the following condition they satisfy:
+            //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
             //  1)onefailregressions
             //  2)oneskipregressions or,
             //  3)newfailsregressions
-            for (var i = 0; i < n; i++){
-                var infoObj = regData[i];
-                if ( this.hasOnefailregressions(infoObj) ){
-                    onefailregressions.push(infoObj);
-                }else if ( this.hasOneskipregressions(infoObj) ){
-                    oneskipregressions.push(infoObj);
-                }else{
-                    newfailsregressions.push(infoObj);
+            for (var i = 0; i < reg.length;; i++){
+                var dataObj = reg[i];
+                if ( this.hasOnefailregressions(dataObj) ){
+                    onefailregressions.push(dataObj);
+                }else if ( this.hasOneskipregressions(dataObj) ){
+                    oneskipregressions.push(dataObj);
                 }
             }
-
-            if(onefailregressions.length == 0 || oneskipregressions.length == 0 || newfailsregressions.length == 0){
+            if(onefailregressions.length == 0 || oneskipregressions.length == 0){
                 console.log("Error Empty: onefailregressions, oneskipregressions, newfailsregressions.");
-                cb("Error: no useful data in regression data (regData).", null, null, null);
+                cb("Error: no useful data in regression data (reg).", null, null, null);
             }else{
-                cb(null, onefailregressions, oneskipregressions, newfailsregressions);
+                if (typeOp == "numFails"){
+                    cb(null, onefailregressions);
+                }else{
+                    cb(null, oneskipregressions);
+                }
             }
         }
-    }
-    //get the regression fixes and send them to be processed by ther server callback.
-    var calc = calcRegressionFixes.bind(this);
-    calc(commit1, commit2, sendCorrespondingDataToServersCallBackFunc);
+    });
 }
 
 //TODO: note the scoring might change and thus, this function might need to change when returns true and false
-CassandraBackend.prototype.hasOnefailregressions = function(infoObj){
-    if (infoObj.fails == 1){
+CassandraBackend.prototype.hasOnefailregressions = function(dataObj){
+    if (dataObj.fails == 1){ //TODO
         return true;
     }else{
         return false;
@@ -1005,8 +1003,8 @@ CassandraBackend.prototype.hasOnefailregressions = function(infoObj){
 }
 
 //TODO: note the scoring might change and thus, this function might need to change when returns true and false
-CassandraBackend.prototype.hasOneskipregressions = function(infoObj){
-    if (infoObj.skips == 1){
+CassandraBackend.prototype.hasOneskipregressions = function(dataObj){
+    if (dataObj.skips == 1){ //TODO
         return true;
     }else{
         return false;

@@ -375,7 +375,7 @@ var GET_regressions = function( req, res ) {
     backend.getRegressions(r1, r2, urlPrefix, page, function(err, data, info) {
         console.log("------------------------------> CALLBACK AT GET REGRESSIONS");
         if(err){
-            console.log("ERROR before stringigy get regressions");
+            console.log("ERROR before stringify get regressions");
             return res.end(JSON.stringify(err,null,'\t'));
         }
         var rows = data;
@@ -576,10 +576,6 @@ var GET_flagged_regressions = function(req, res ){
                     //do oneskipregressions
                     res_string = gethtmlStr_OneFailRegressions(oneskipregressions);
                     break;
-                case "newfailsregressions":
-                    //do newfailsregressions
-                    res_string = gethtmlStr_OneFailRegressions(newfailsregressions);
-                    break;
                 default:
                     //error
                     console.log("Error: On DEFAULT case of switch statment");
@@ -594,6 +590,71 @@ var GET_flagged_regressions = function(req, res ){
     console.log("./ called backend.getFlaggedRegressions");
     backend.getFlaggedRegressions(commit1, commit2, cb);
 }
+
+var makeOneDiffRegressionRow = function(row) {
+    return [
+        pageTitleData(row),
+        oldCommitLinkData(row.old_commit, row.new_commit, row.title, row.prefix),
+        newCommitLinkData(row.old_commit, row.new_commit, row.title, row.prefix)
+    ];
+};
+
+var displayOneDiffRegressions = function(numFails, numSkips, subheading, headingLinkData, req, res){
+    var r1 = req.params[0];
+    var r2 = req.params[1];
+    var page = (req.params[2] || 0) - 0;
+    var offset = page * 40;
+    var cb = function(err, rows) {
+        if (err) {
+            res.send(err.toString(), 500);
+        } else {
+            var headingLink = [
+                {name: headingLinkData[0],
+                    info: headingLinkData[1],
+                    url: '/' + headingLinkData[2] + 'regressions/between/' + r1 + '/' + r2},
+                {name: 'other new fails',
+                    info: 'other cases with semantic diffs, previously only syntactic diffs',
+                    url: '/newfailsregressions/between/' + r1 + '/' + r2}
+            ];
+            var data = {
+                page: page,
+                urlPrefix: '/regressions/between/' + r1 + '/' + r2,
+                urlSuffix: '',
+                heading: 'Flagged regressions between selected revisions: ' +
+                    "TODO",
+                    //rows[0].numFlaggedRegressions, //TODO
+                subheading: subheading,
+                headingLink: headingLink,
+                header: ['Title', 'Old Commit', 'New Commit']
+            };
+            // db.query(dbOneDiffRegressionsBetweenRevs, [r2, r1, numFails, numSkips, offset],
+            //     displayPageList.bind(null, res, data, makeOneDiffRegressionRow));
+            displayPageList.bind(res, data, makeOneDiffRegressionRow, null, rows);
+        }
+    };
+    var typeOp;
+    if (numFails == 1 && numSkips == 0){
+        typeOp = "numFails";
+    }else if (numFails == 0 && num Skips == 1){
+        typeOp = "numSkips";
+    }else{
+        console.log("Panic: error that should not exist. Handler doesn't exist.");
+        res.send(err.toString(), 500);
+    }
+    backend.getFlaggedRegressions(r1, r2, typeOp, cb);
+    //db.query (dbNumOneDiffRegressionsBetweenRevs, [r2, r1, numFails, numSkips],);
+};
+
+var GET_oneFailRegressions = displayOneDiffRegressions.bind(
+    null, 1, 0, 'Old Commit: perfect | New Commit: one semantic diff',
+    ['one skip regressions', 'one new syntactic diff, previously perfect', 'oneskip']
+);
+
+var GET_oneSkipRegressions = displayOneDiffRegressions.bind(
+    null, 0, 1, 'Old Commit: perfect | New Commit: one syntactic diff',
+    ['one fail regressions', 'one new semantic diff, previously perfect', 'onefail']
+);
+
 
 // Make an app
 var app = express.createServer();
