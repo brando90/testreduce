@@ -529,74 +529,49 @@ var gethtmlStr_OneFailRegressions = function(onefailregressions){
 
 }
 
-//Main function
-// ROWS[i]:  e4aca3cbe9c892fc93f45e2a48aa76484c18acbb
-// ROWS[i]:  33471172030bb001557200d193b402cfdf4eeaaf
-var GET_flagged_regressions = function(req, res ){
-    if (req.params.length != 3){
-        console.log("Wrong url.")
-    }
-    // var cql = "select * from commits;";
-    // var args = [];
-    // var cb_tmp = function(err, results){
-    //     if (err){
-    //         console.log("ERROR ON DEBUG");
-    //     }else{
-    //         var rows = results.rows;
-    //         for (var i = 0; i<rows.length; i++){
-    //             console.log("ROWS[i]: ", rows[i][0].toString());
-    //         }
-    //     }
-    // };
-    // backend.callDBdebug(cql, args, cb_tmp);
-    var flagged_regressions_param = req.params[0]; // = o(onefailregressions|oneskipregressions|newfailsregressions)
-    var commit1 = req.params[1];
-    var commit2 = req.params[2];
-    console.log("commit1 from url: ", commit1);
-    console.log("commit2 from url: ", commit2);
-    var cb = function(err, onefailregressions, oneskipregressions, newfailsregressions){
-        //if(err){ //uncomment for deployment
-        console.log("===> inside callback from server.js");
-        if(false){ //comment for deployment
-            console.log("Error: in GET_flagged_regressions");
-            console.log(err);
-        }
-        //check for empty stuff
-        else{
-            var res_string;
-            console.log("-----> before switch statment");
-            console.log(flagged_regressions_param);
-            switch(flagged_regressions_param){
-                case "onefailregressions":
-                    console.log(":::> CASE: onefailregressions");
-                    //display onefailregressions
-                    res_string = gethtmlStr_OneFailRegressions(onefailregressions);
-                    break;
-                case "oneskipregressions":
-                    //do oneskipregressions
-                    res_string = gethtmlStr_OneFailRegressions(oneskipregressions);
-                    break;
-                default:
-                    //error
-                    console.log("Error: On DEFAULT case of switch statment");
-                    break;
-            }
-            console.log(res_string);
-            console.log("---++++===> DOING response.write()");
-            res.write(res_string);
-            res.end("END");
-        }
-    };
-    console.log("./ called backend.getFlaggedRegressions");
-    backend.getFlaggedRegressions(commit1, commit2, cb);
-}
-
 var makeOneDiffRegressionRow = function(row) {
     return [
         pageTitleData(row),
         oldCommitLinkData(row.old_commit, row.new_commit, row.title, row.prefix),
         newCommitLinkData(row.old_commit, row.new_commit, row.title, row.prefix)
     ];
+};
+
+// ROWS[i]:  e4aca3cbe9c892fc93f45e2a48aa76484c18acbb
+// ROWS[i]:  33471172030bb001557200d193b402cfdf4eeaaf
+var GET_newFailsRegressions = function(req, res) {
+    var r1 = req.params[0];
+    var r2 = req.params[1];
+    var page = (req.params[2] || 0) - 0;
+    var offset = page * 40;
+    var cb = function(err, rows) {
+        if (err) {
+            res.send(err.toString(), 500);
+        } else {
+            var data = {
+                page: page,
+                urlPrefix: '/regressions/between/' + r1 + '/' + r2,
+                urlSuffix: '',
+                heading: 'Flagged regressions between selected revisions: ' +
+                    "TODO",
+                    //rows[0].numFlaggedRegressions, TODO
+                subheading: 'Old Commit: only syntactic diffs | New Commit: semantic diffs',
+                headingLink: [
+                    {name: 'one fail regressions',
+                        info: 'one new semantic diff, previously perfect',
+                        url: '/onefailregressions/between/' + r1 + '/' + r2},
+                    {name: 'one skip regressions',
+                        info: 'one new syntactic diff, previously perfect',
+                        url: '/oneskipregressions/between/' + r1 + '/' + r2}
+                ],
+                header: regressionsHeaderData
+            };
+            // db.query(dbNewFailsRegressionsBetweenRevs, [r2, r1, offset],
+            //     displayPageList.bind(null, res, data, makeRegressionRow));
+            displayPageList.bind(res, data, makeOneDiffRegressionRow, null, rows);
+        }
+    };
+    backend.getFlaggedRegressions(r1, r2, cb); //TODO this function doesn't exist yet.
 };
 
 var displayOneDiffRegressions = function(numFails, numSkips, subheading, headingLinkData, req, res){
@@ -710,18 +685,13 @@ app.get( /^\/regressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_regress
 // Topfixes between two revisions.
 app.get( /^\/topfixes\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_topfixes );
 
-// Gets Flagged Regressions.
-//app.get( /^(\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)$/ , GET_flagged_regressions)
-//app.get( /^(\/[onefailregressions|oneskipregressions|newfailsregressions)\/between\/commit1_regex\/commit_regex)$/ , GET_flagged_regressions)
-//app.get( /^\/(onefailregressions|oneskipregressions|newfailsregressions)\/between\/(\w+)\/(\w+)$/ , GET_flagged_regressions)
-
 // Regressions between two revisions that introduce one semantic error to a perfect page.
 app.get(/^\/onefailregressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_oneFailRegressions );
 
 // Regressions between two revisions that introduce one syntactic error to a perfect page.
 app.get(/^\/oneskipregressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_oneSkipRegressions );
 
-// Regressions between two revisions that introduce senantic errors (previously only syntactic diffs).
+// Regressions between two revisions that introduce semantic errors (previously only syntactic diffs).
 app.get(/^\/newfailsregressions\/between\/([^\/]+)\/([^\/]+)(?:\/(\d+))?$/, GET_newFailsRegressions );
 
 // Distribution of fails
