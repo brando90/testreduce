@@ -65,9 +65,11 @@ function CassandraBackend(name, config, callback) {
         if (err) {
             console.log('failure in setup', err);
         }
-        console.log( 'in memory queue setup complete' );
-	};
-	async.waterfall([getCommits.bind( this ), getTests.bind( this ), initTestPQ.bind( this )], statusOfSetup.bind( this ));
+        console.log('in memory queue setup complete');
+        self.topFailsArray.sort(function(a,b){return b.score - a.score});
+        //console.log("res: " + JSON.stringify(result,null,'\t'));
+
+    });
 
     callback();
 }
@@ -765,8 +767,6 @@ var regressionHelper = function(test, score1, score2) {
 /**
 This method calculates all the scores data from the tests table
 **/
-// 33471172030bb001557200d193b402cfdf4eeaaf
-// http://localhost:8001/onefailregressions/between/33471172030bb001557200d193b402cfdf4eeaaf/33471172030bb001557200d193b402cfdf4eeaaf
 function calcRegressionFixes(r1, r2, cb) {
     //var data = mock.testdata;
 
@@ -779,30 +779,23 @@ function calcRegressionFixes(r1, r2, cb) {
     var fixData = [];
 
     var queries = [{
-        //query: 'select test, score from test_by_score where commit = ?',
-        //query: 'select * from test_by_score where commit = ?',
-        //query: 'select * from test_by_score',
+        query: 'select test, score from test_by_score where commit = ?',
         params: [new Buffer(r1)]
     }, {
-        //query: 'select test, score from test_by_score where commit = ?',
-        //query: 'select * from test_by_score where commit = ?',
-        query: 'select * from test_by_score',
+        query: 'select test, score from test_by_score where commit = ?',
         params: [new Buffer(r2)]
     }];
 
-    console.log("CB commit1 r1: ", r1);
-    console.log("CB commit2 r2: ", r2);
     var firstResults = {};
     var queryCB = function (err, results) {
         if (err) {
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
-            console.log( "Error thrown by: calcRegressionFixes => queryCB1" );
+            //console.log( 'no seen commits, error in database' );
             cb("no seen commits, error in database");
         } else {
             firstResults = results.rows;
             this.client.execute(queries[1].query, queries[1].params, this.consistencies.write, queryCB2.bind(this));
-            //this.client.execute(queries[1].query, queries[1].params, this.consistencies.write, queryCB2.bind(this));
         }
     };
     var queryCB2 = function (err, results) {
@@ -810,64 +803,37 @@ function calcRegressionFixes(r1, r2, cb) {
             cb(err);
         } else if (!results || !results.rows || results.rows.length === 0) {
             //console.log( 'no seen commits, error in database' );
-            console.log("Error thrown by calcRegressionFixes => queryCB2");
             cb("no seen commits, error in database");
         } else {
             var data = results.rows;
             //console.log("results: " + JSON.stringify(results, null, '\t'));
             //go through firstResults, and for each of its tests find the corresponding one
             //in the results rows, and for each of them that are regressions, push it to the regData, else fixData
-            console.log("firstresult[0][0]: " + firstResults[0][0].toString());
-            //cb(null, [], []); //uncomment for deployment
-            //return; //uncomment for deployment
-			
-			//console.log(data);
-			//console.log(firstResults);
-			console.log("length of data: ", data.length);
-			console.log("length of firstResults: ", firstResults.length );
+            console.log("firstResults.length: ", firstResults.length);
+            console.log("data.length: ", data.length);
             for(var y in firstResults) {
-				//console.log();
-                //console.log(y);
                 //console.log("result: " + firstResults[y][0].toString());
                 for(var x in data) {
                     if(data[x][0].toString() === firstResults[y][0].toString()) {
-                      //var ret = {
+                      // var ret = {
                       //     first: firstResults[y],
                       //     second: data[x]
-                      //};
-                      //console.log("ret: " + JSON.stringify(ret, null,'\t'));
-                      //var score1 = firstResults[y][1];
-                      //var score2 = data[x][1];
-					  var score1 = firstResults[y][3];
-					  var score2 = data[x][3];
+                      // };
+                      // console.log("ret: " + JSON.stringify(ret, null,'\t'));
+                      var score1 = firstResults[y][1];
+                      var score2 = data[x][1];
                       var test = data[x][0].toString();
-					  //console.log("column1 = ", firstResults[y][3]);
-					  //console.log("column2 = ", data[x][3]);
-                      if(score1< score2) {
-						//console.log("PUSHED TO fixData: x, y", x, y);
-						fixData.push(regressionHelper(test, score1, score2));
-                      }else if (score1 > score2){
-						//console.log("PUSHED TO regData: x, y", x, y);
-						regData.push(regressionHelper(test, score1, score2));
-					  }
-					  //else{
-						//console.log("Not Pushed at all. x, y,", x, y);
-					  //}
+                      if(score1< score2) fixData.push(regressionHelper(test, score1, score2));
+                      else if (score1 > score2) regData.push(regressionHelper(test, score1, score2));
                     }
                 };
                 //console.log("y: " + JSON.stringify(firstResults[y],null, '\t'))
             }
-		console.log("size of fixData: ", fixData.length);
-		console.log("size of regDATA: ", regData.length);
-		console.log("sending regressions data to CB");
             cb(null, regData, fixData);
         }
     };
 
-    //this.client.execute(queries[0].query, queries[0].params, this.consistencies.write, queryCB.bind(this));
-    this.client.execute(queries[0].query, [], this.consistencies.write, queryCB.bind(this));
-    //this.client.execute(queries[0].query, [new Buffer("33333437313137323033306262303031353537323030643139336234303263666466346565616166")], this.consistencies.write, queryCB.bind(this));
-
+    this.client.execute(queries[0].query, queries[0].params, this.consistencies.write, queryCB.bind(this));
     // for(var y in data) {
     //   var x = data[y];
     //   var newtest = statsScore(x.skips, x.fails, x.errors);
@@ -991,18 +957,13 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
         if (err){
             cb(err, null);
         }else{
-            //uncomment for production, can be commented for development time.
             if (reg.length == 0){
                 console.log("executed checking if reg was empty");
                 cb("Error Empty: no data in regression data (reg).", null);
             }
             var collectedReg = [];
-            //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
-            //  1)onefailregressions
-            //  2)oneskipregressions or,
             for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
-				console.log("we are collecting 1 fails/skips: i = ", i);
                 if ( dataObj.fails == numFails && dataObj.skips == numSkips ){
                     collectedReg.push(dataObj);
                 }
@@ -1011,7 +972,11 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
                 console.log("Error Empty: onefailregressions, oneskipregressions.");
                 cb("Error: no useful data in regression data (collectedReg).", null);
             }else{
-				consoel.log("Done collecting one fail/skips! Sending them to server.js to make an html.");
+                for (var i = 0; i < collectedReg.length; i++) {
+                    collectedReg[i].old_commit = commit2;
+                    collectedReg[i].new_commit = commit1;
+                }
+				console.log("Done collecting one fail/skips! Sending them to server.js to make an html.");
                 cb(null, collectedReg);
             }
         }
@@ -1037,13 +1002,17 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
                 console.log("executed checking if reg was empty");
                 cb("Error Empty: no data in regression data (reg).", null);
             }
+            //AND s2.fails = 0 AND s1.fails > 0
+            //AND ((s1.skips > 0) OR (s1.fails != 1) OR (s2.skips > 0));
+            var isNewFail = function(dataObj){
+                var cond1 = (dataObj.old_fails == 0) && (dataObj.fails > 0);
+                var cond2 = ( (dataObj.skips > 0) || (dataObj.fails != 1) || (dataObj.skips > 0) );
+                return cond1 && cond2;
+            }
             var collectedReg = [];
-            //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
-            //  1)onefailregressions
-            //  2)oneskipregressions or,
             for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
-                if ( this.isNewFail(dataObj) ){
+                if ( isNewFail(dataObj) ){
                     collectedReg.push(dataObj);
                 }
             }
@@ -1051,45 +1020,40 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
                 console.log("Error Empty: newfailsregressions.");
                 cb("Error: no useful data in regression data (collectedReg).", null);
             }else{
+                for (var i = 0; i < collectedReg.length; i++) {
+                    collectedReg[i].old_commit = commit2;
+                    collectedReg[i].new_commit = commit1;
+                }
                 cb(null, collectedReg);
             }
         }
     });
 }
 
-//AND s2.fails = 0 AND s1.fails > 0
-//AND ((s1.skips > 0) OR (s1.fails != 1) OR (s2.skips > 0));
-CassandraBackend.prototype.isNewFail = function(dataObj){
-    var cond1 = (dataObj.old_fails == 0) && (dataObj.fails > 0);
-    var cond2 = ( (dataObj.skips > 0) || (dataObj.fails != 1) || (dataObj.skips > 0) );
-    return cond1 && cond2;
-}
-
-
-CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
-    var cb = function(err, result){
-        if (err){
-            console.log("ERROR");
-            console.log(err);
-        }else{
-            console.log("Insertion Done!");
-        }
-    };
-    var cql = "insert into test_by_score (commit, delta, test, score) values (?, ?, ?, ?);";
-    args1 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 28487];
-    args2 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 192];
-    args3 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739];
+// CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
+//     var cb = function(err, result){
+//         if (err){
+//             console.log("ERROR");
+//             console.log(err);
+//         }else{
+//             console.log("Insertion Done!");
+//         }
+//     };
+//     var cql = "insert into test_by_score (commit, delta, test, score) values (?, ?, ?, ?);";
+//     args1 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 28487];
+//     args2 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 192];
+//     args3 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739];
     
-    args4 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500];
-    args5 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 1050];
-    args6 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 100];
-    this.client.execute(cql, args1, this.consistencies.write, cb);
-    this.client.execute(cql, args2, this.consistencies.write, cb);
-    this.client.execute(cql, args3, this.consistencies.write, cb);
-    this.client.execute(cql, args4, this.consistencies.write, cb);
-    this.client.execute(cql, args5, this.consistencies.write, cb);
-    this.client.execute(cql, args6, this.consistencies.write, cb);
-}
+//     args4 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500];
+//     args5 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 1050];
+//     args6 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 100];
+//     this.client.execute(cql, args1, this.consistencies.write, cb);
+//     this.client.execute(cql, args2, this.consistencies.write, cb);
+//     this.client.execute(cql, args3, this.consistencies.write, cb);
+//     this.client.execute(cql, args4, this.consistencies.write, cb);
+//     this.client.execute(cql, args5, this.consistencies.write, cb);
+//     this.client.execute(cql, args6, this.consistencies.write, cb);
+// }
 
 // Node.js module exports. This defines what
 // require('./CassandraBackend.js'); evaluates to.

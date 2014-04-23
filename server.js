@@ -530,13 +530,32 @@ var gethtmlStr_OneFailRegressions = function(onefailregressions){
 
 }
 
+
+var newCommitLinkData = function(oldCommit, newCommit, title, prefix) {
+    return {
+        url: '/resultFlagNew/' + oldCommit + '/' + newCommit + '/' + prefix + '/' + title,
+        name: newCommit.substr(0,7)
+    };
+};
+
+var oldCommitLinkData = function(oldCommit, newCommit, title, prefix) {
+    return {
+        url: '/resultFlagOld/' + oldCommit + '/' + newCommit + '/' + prefix + '/' + title,
+        name: oldCommit.substr(0,7)
+    };
+};
+
 var makeOneDiffRegressionRow = function(row) {
-    return [
+    console.log("ROW ARGUMENT: ", row);
+    var output = [
         pageTitleData(row),
         oldCommitLinkData(row.old_commit, row.new_commit, row.title, row.prefix),
         newCommitLinkData(row.old_commit, row.new_commit, row.title, row.prefix)
     ];
+    return output;
 };
+
+var regressionsHeaderData = ['Title', 'Old Commit', 'Errors|Fails|Skips', 'New Commit', 'Errors|Fails|Skips'];
 
 // ROWS[i]:  e4aca3cbe9c892fc93f45e2a48aa76484c18acbb
 // ROWS[i]:  33471172030bb001557200d193b402cfdf4eeaaf
@@ -553,8 +572,7 @@ var GET_newFailsRegressions = function(req, res) {
                 page: page,
                 urlPrefix: '/regressions/between/' + r1 + '/' + r2,
                 urlSuffix: '',
-                heading: 'Flagged regressions between selected revisions: ' +
-                    "TODO",
+                heading: 'Flagged regressions between selected revisions: ' +rows.length,
                     //rows[0].numFlaggedRegressions, TODO
                 subheading: 'Old Commit: only syntactic diffs | New Commit: semantic diffs',
                 headingLink: [
@@ -569,7 +587,7 @@ var GET_newFailsRegressions = function(req, res) {
             };
             // db.query(dbNewFailsRegressionsBetweenRevs, [r2, r1, offset],
             //     displayPageList.bind(null, res, data, makeRegressionRow));
-            displayPageList.bind(res, data, makeOneDiffRegressionRow, null, rows);
+            displayPageList(res, data, makeRegressionRow, null, rows);
         }
     };
     backend.getNewFailsRegressions(r1, r2, cb); //TODO this function doesn't exist yet.
@@ -597,17 +615,14 @@ var displayOneDiffRegressions = function(numFails, numSkips, subheading, heading
                 page: page,
                 urlPrefix: '/regressions/between/' + r1 + '/' + r2,
                 urlSuffix: '',
-                heading: 'Flagged regressions between selected revisions: ' +
-                    "TODO",
-                    //rows[0].numFlaggedRegressions, //TODO
+                heading: 'Flagged regressions between selected revisions: ' + rows.length,
                 subheading: subheading,
                 headingLink: headingLink,
                 header: ['Title', 'Old Commit', 'New Commit']
             };
-            // db.query(dbOneDiffRegressionsBetweenRevs, [r2, r1, numFails, numSkips, offset],
-            //     displayPageList.bind(null, res, data, makeOneDiffRegressionRow));
 			console.log("About to display stuff!");
-            displayPageList.bind(res, data, makeOneDiffRegressionRow, null, rows);
+            displayPageList(res, data, makeOneDiffRegressionRow, null, rows);
+            console.log("Done calling displayPageList");
         }
     };
 	console.log("sending request to backend to get oneDiffRegressions.");
@@ -654,7 +669,7 @@ app.get(/^\/robots.txt$/, function ( req, res ) {
 });
 
 //debug
-app.get( /^\/debug/, DO_DEBUG);
+//app.get( /^\/debug/, DO_DEBUG);
 
 // Main interface
 app.get( /^\/results(\/([^\/]+))?$/, resultsWebInterface );
