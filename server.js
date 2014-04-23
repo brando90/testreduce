@@ -457,17 +457,20 @@ var displayPageList = function(res, data, makeRow, err, rows){
 };
 
 var makeRegressionRow = function(row) {
-    return [
+    //console.log("ROW: ", row);
+    var output = [
         pageTitleData(row),
         commitLinkData(row.new_commit, row.title, row.prefix),
         row.errors + "|" + row.fails + "|" + row.skips,
         commitLinkData(row.old_commit, row.title, row.prefix),
         row.old_errors + "|" + row.old_fails + "|" + row.old_skips
     ];
+    return output;
 };
 
 var pageTitleData = function(row){
-    var parsed = JSON.parse(row.test);
+    //console.log(row.test);
+    var parsed = JSON.parse( JSON.stringify(row.test) );
     var prefix = encodeURIComponent( parsed.prefix ),
     title = encodeURIComponent( parsed.title );
     return {
@@ -546,7 +549,7 @@ var oldCommitLinkData = function(oldCommit, newCommit, title, prefix) {
 };
 
 var makeOneDiffRegressionRow = function(row) {
-    console.log("ROW ARGUMENT: ", row);
+    //console.log("ROW ARGUMENT: ", row);
     var output = [
         pageTitleData(row),
         oldCommitLinkData(row.old_commit, row.new_commit, row.title, row.prefix),
@@ -585,12 +588,10 @@ var GET_newFailsRegressions = function(req, res) {
                 ],
                 header: regressionsHeaderData
             };
-            // db.query(dbNewFailsRegressionsBetweenRevs, [r2, r1, offset],
-            //     displayPageList.bind(null, res, data, makeRegressionRow));
             displayPageList(res, data, makeRegressionRow, null, rows);
         }
     };
-    backend.getNewFailsRegressions(r1, r2, cb); //TODO this function doesn't exist yet.
+    backend.getNewFailsRegressions(r1, r2, cb);
 };
 
 var displayOneDiffRegressions = function(numFails, numSkips, subheading, headingLinkData, req, res){
