@@ -17,6 +17,7 @@ var argv = require('optimist')
 
 //RANDOM COMMIT I MADE UP DOESN'T DO ANYTHING FOR NOW
 var DUMMYCOMMIT = '0b5db8b91bfdeb0a304b372dd8dda123b3fd1ab6';
+//var DUMMYCOMMIT = 'bdb14fbe076f6b94444c660e36a400151f26fc6f';
 //var DUMMYCOMMIT = '33471172030bb001557200d193b402cfdf4eeaaf';
 
 var createTestBlob = function(prefix, title) {

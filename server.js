@@ -580,7 +580,8 @@ var displayOneDiffRegressions = function(numFails, numSkips, subheading, heading
     var page = (req.params[2] || 0) - 0;
     var offset = page * 40;
     var cb = function(err, rows) {
-        if (err) {
+        console.log("backend has responed with some rows! Lets see what they do...");
+		if (err) {
             res.send(err.toString(), 500);
         } else {
             var headingLink = [
@@ -604,9 +605,11 @@ var displayOneDiffRegressions = function(numFails, numSkips, subheading, heading
             };
             // db.query(dbOneDiffRegressionsBetweenRevs, [r2, r1, numFails, numSkips, offset],
             //     displayPageList.bind(null, res, data, makeOneDiffRegressionRow));
+			console.log("About to display stuff!");
             displayPageList.bind(res, data, makeOneDiffRegressionRow, null, rows);
         }
     };
+	console.log("sending request to backend to get oneDiffRegressions.");
     backend.getOneDiffRegressions(r1, r2, numFails, numSkips, cb);
     //db.query (dbNumOneDiffRegressionsBetweenRevs, [r2, r1, numFails, numSkips],);
 };
@@ -624,7 +627,6 @@ var GET_oneSkipRegressions = displayOneDiffRegressions.bind(
 var DO_DEBUG = function(req, res){
 	backend.callDBdebug();
 }
-
 
 // Make an app
 var app = express.createServer();
@@ -651,7 +653,7 @@ app.get(/^\/robots.txt$/, function ( req, res ) {
 });
 
 //debug
-app.( /^\/debug, DO_DEBUG);
+app.get( /^\/debug/, DO_DEBUG);
 
 // Main interface
 app.get( /^\/results(\/([^\/]+))?$/, resultsWebInterface );

@@ -789,8 +789,8 @@ function calcRegressionFixes(r1, r2, cb) {
         params: [new Buffer(r2)]
     }];
 
-    console.log("commit1 r1: ", r1);
-    console.log("commit2 r2: ", r2);
+    console.log("CB commit1 r1: ", r1);
+    console.log("CB commit2 r2: ", r2);
     var firstResults = {};
     var queryCB = function (err, results) {
         if (err) {
@@ -817,27 +817,48 @@ function calcRegressionFixes(r1, r2, cb) {
             //go through firstResults, and for each of its tests find the corresponding one
             //in the results rows, and for each of them that are regressions, push it to the regData, else fixData
             console.log("firstresult[0][0]: " + firstResults[0][0].toString());
-            cb(null, [], []); //uncomment for deployment
-            return; //uncomment for deployment
+            //cb(null, [], []); //uncomment for deployment
+            //return; //uncomment for deployment
+			
+			//console.log(data);
+			//console.log(firstResults);
+			console.log("length of data: ", data.length);
+			console.log("length of firstResults: ", firstResults.length );
             for(var y in firstResults) {
+				//console.log();
                 //console.log(y);
                 //console.log("result: " + firstResults[y][0].toString());
                 for(var x in data) {
                     if(data[x][0].toString() === firstResults[y][0].toString()) {
-                      // var ret = {
+                      //var ret = {
                       //     first: firstResults[y],
                       //     second: data[x]
-                      // };
-                      // console.log("ret: " + JSON.stringify(ret, null,'\t'));
-                      var score1 = firstResults[y][1];
-                      var score2 = data[x][1];
+                      //};
+                      //console.log("ret: " + JSON.stringify(ret, null,'\t'));
+                      //var score1 = firstResults[y][1];
+                      //var score2 = data[x][1];
+					  var score1 = firstResults[y][3];
+					  var score2 = data[x][3];
                       var test = data[x][0].toString();
-                      if(score1< score2) fixData.push(regressionHelper(test, score1, score2));
-                      else if (score1 > score2) regData.push(regressionHelper(test, score1, score2));
+					  //console.log("column1 = ", firstResults[y][3]);
+					  //console.log("column2 = ", data[x][3]);
+                      if(score1< score2) {
+						//console.log("PUSHED TO fixData: x, y", x, y);
+						fixData.push(regressionHelper(test, score1, score2));
+                      }else if (score1 > score2){
+						//console.log("PUSHED TO regData: x, y", x, y);
+						regData.push(regressionHelper(test, score1, score2));
+					  }
+					  //else{
+						//console.log("Not Pushed at all. x, y,", x, y);
+					  //}
                     }
                 };
                 //console.log("y: " + JSON.stringify(firstResults[y],null, '\t'))
             }
+		console.log("size of fixData: ", fixData.length);
+		console.log("size of regDATA: ", regData.length);
+		console.log("sending regressions data to CB");
             cb(null, regData, fixData);
         }
     };
@@ -961,6 +982,9 @@ CassandraBackend.prototype.getFixes = function (r1, r2, prefix, page, cb) {
 CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, numFails, numSkips, cb){
     //get the regression fixes and send them to be processed by ther server callback.
     var calc = calcRegressionFixes.bind(this);
+    if (commit1 == "DEBUG"){
+        this.getOneDiffRegressionsDEBUG(commit1, commit2, numFails, numSkips, cb);
+    }
     calc(commit1, commit2, function(err, reg, fix){
         //filters the data from the regressions and sends it to the original server Call Back functionn 
         if (err){
@@ -975,8 +999,9 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
             //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
             //  1)onefailregressions
             //  2)oneskipregressions or,
-            for (var i = 0; i < reg.length;; i++){
+            for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
+				console.log("we are collecting 1 fails/skips: i = ", i);
                 if ( dataObj.fails == numFails && dataObj.skips == numSkips ){
                     collectedReg.push(dataObj);
                 }
@@ -985,6 +1010,7 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
                 console.log("Error Empty: onefailregressions, oneskipregressions.");
                 cb("Error: no useful data in regression data (collectedReg).", null);
             }else{
+				consoel.log("Done collecting one fail/skips! Sending them to server.js to make an html.");
                 cb(null, collectedReg);
             }
         }
@@ -1014,7 +1040,7 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
             //go through the reg, and for each piece of test information collect it, depending on which of the following condition they satisfy:
             //  1)onefailregressions
             //  2)oneskipregressions or,
-            for (var i = 0; i < reg.length;; i++){
+            for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
                 if ( this.isNewFail(dataObj) ){
                     collectedReg.push(dataObj);
@@ -1038,8 +1064,30 @@ CassandraBackend.prototype.isNewFail = function(dataObj){
     return cond1 && cond2;
 }
 
+
 CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
-    this.client.execute(cql, args, this.consistencies.write, cb);
+    var cb = function(err, result){
+        if (err){
+            console.log("ERROR");
+            console.log(err);
+        }else{
+            console.log("Insertion Done!");
+        }
+    };
+    var cql = "insert into test_by_score (commit, delta, test, score) values (?, ?, ?, ?);";
+    args1 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 28487];
+    args2 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 192];
+    args3 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739];
+    
+    args4 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500];
+    args5 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 1050];
+    args6 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 100];
+    this.client.execute(cql, args1, this.consistencies.write, cb);
+    this.client.execute(cql, args2, this.consistencies.write, cb);
+    this.client.execute(cql, args3, this.consistencies.write, cb);
+    this.client.execute(cql, args4, this.consistencies.write, cb);
+    this.client.execute(cql, args5, this.consistencies.write, cb);
+    this.client.execute(cql, args6, this.consistencies.write, cb);
 }
 
 // Node.js module exports. This defines what
