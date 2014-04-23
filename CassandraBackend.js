@@ -781,7 +781,7 @@ function calcRegressionFixes(r1, r2, cb) {
     var queries = [{
         //query: 'select test, score from test_by_score where commit = ?',
         //query: 'select * from test_by_score where commit = ?',
-        query: 'select * from test_by_score',
+        //query: 'select * from test_by_score',
         params: [new Buffer(r1)]
     }, {
         //query: 'select test, score from test_by_score where commit = ?',
