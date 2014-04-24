@@ -964,6 +964,7 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
             var collectedReg = [];
             for (var i = 0; i < reg.length; i++){
                 var dataObj = reg[i];
+				//IMPORTANT NOTE: this condition might have to change if the score metric changes.
                 if ( dataObj.fails == numFails && dataObj.skips == numSkips ){
                     collectedReg.push(dataObj);
                 }
@@ -1002,6 +1003,7 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
                 console.log("executed checking if reg was empty");
                 cb("Error Empty: no data in regression data (reg).", null);
             }
+			//IMPORTANT NOTE: this conditional might have to change according to the socre metric.
             //AND s2.fails = 0 AND s1.fails > 0
             //AND ((s1.skips > 0) OR (s1.fails != 1) OR (s2.skips > 0));
             var isNewFail = function(dataObj){

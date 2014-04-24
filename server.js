@@ -631,11 +631,13 @@ var displayOneDiffRegressions = function(numFails, numSkips, subheading, heading
     //db.query (dbNumOneDiffRegressionsBetweenRevs, [r2, r1, numFails, numSkips],);
 };
 
+//IMPORTANT NOTE: the argument (1,0) to this function might have to change if we change the score metric.
 var GET_oneFailRegressions = displayOneDiffRegressions.bind(
     null, 1, 0, 'Old Commit: perfect | New Commit: one semantic diff',
     ['one skip regressions', 'one new syntactic diff, previously perfect', 'oneskip']
 );
 
+//IMPORTANT NOTE: the argument (0,1) to this function might have to change if we change the score metric.
 var GET_oneSkipRegressions = displayOneDiffRegressions.bind(
     null, 0, 1, 'Old Commit: perfect | New Commit: one syntactic diff',
     ['one fail regressions', 'one new semantic diff, previously perfect', 'onefail']
