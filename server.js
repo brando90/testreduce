@@ -541,7 +541,6 @@ var TESTGET_tfArray = function(req, res) {
 var gethtmlStr_OneFailRegressions = function(onefailregressions){
     var head = "<head><meta charset=\"UTF-8\"><link type=\'text\/css\' href=\"\/static\/style.css\" rel=\"stylesheet\"><\/head>";
     return head;
-
 }
 
 
