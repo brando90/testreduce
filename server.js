@@ -433,6 +433,7 @@ var displayPageList = function(res, data, makeRow, err, rows){
         var tableRows = [];
         for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
+            console.log("===> row: ", row);
             var tableRow = {status: pageStatus(row), tableData: makeRow(row)};
             // console.log("table: " + JSON.stringify(tableRow, null, '\t'));
             tableRows.push(tableRow);
@@ -451,7 +452,8 @@ var displayPageList = function(res, data, makeRow, err, rows){
             return urlPrefix + "/" + ( page + 1 ) + urlSuffix;
         });
 
-        // console.log("JSON: " + JSON.stringify(tableData, null, '\t'));
+        //console.log("BEFORE THE res.render(...)");
+        //console.log("JSON: " + JSON.stringify(tableData, null, '\t'));
         res.render('table.html', tableData);
     }
 };
@@ -469,8 +471,17 @@ var makeRegressionRow = function(row) {
 };
 
 var pageTitleData = function(row){
-    //console.log(row.test);
-    var parsed = JSON.parse( JSON.stringify(row.test) );
+    // console.log("----");
+    // console.log("row.test", row.test);
+    // console.log("JSON.parse(row.test): ", JSON.parse(row.test));
+    // console.log("----");
+    // process.exit(0);
+    //var parsed = JSON.parse( JSON.stringify(row.test) );
+    try{
+        var parsed = JSON.parse( row.test );
+    }catch (e) {
+        var parsed =JSON.parse(row.test.replace(/\"\"/g, '"'));
+    }
     var prefix = encodeURIComponent( parsed.prefix ),
     title = encodeURIComponent( parsed.title );
     return {
@@ -574,7 +585,7 @@ var GET_newFailsRegressions = function(req, res) {
             var data = {
                 page: page,
                 urlPrefix: '/regressions/between/' + r1 + '/' + r2,
-                urlSuffix: '',
+                urlSuffix: '', //TODO
                 heading: 'Flagged regressions between selected revisions: ' +rows.length,
                     //rows[0].numFlaggedRegressions, TODO
                 subheading: 'Old Commit: only syntactic diffs | New Commit: semantic diffs',

@@ -823,6 +823,13 @@ function calcRegressionFixes(r1, r2, cb) {
                       var score1 = firstResults[y][1];
                       var score2 = data[x][1];
                       var test = data[x][0].toString();
+                      //var test = JSON.stringify(data[x][0]);
+                      // console.log(typeof data[x][0]);
+                      // console.log("data[x][0]: ", data[x][0]);
+                      // console.log("data[x][0].toString(): ", data[x][0].toString());
+                      // console.log( "JSON.string(data[x][0]): ", JSON.stringify(data[x][0]) );
+                      // console.log( "JSON.string(data[x][0]): ", JSON.parse( data[x][0].toString() ) );
+                      // process.exit(0);
                       if(score1< score2) fixData.push(regressionHelper(test, score1, score2));
                       else if (score1 > score2) regData.push(regressionHelper(test, score1, score2));
                     }
@@ -1017,6 +1024,7 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
                 if ( isNewFail(dataObj) ){
                     collectedReg.push(dataObj);
                 }
+                //console.log(":::> ROW: ", JSON.parse(collectedReg[0].test) );
             }
             if(collectedReg.length == 0){
                 console.log("Error Empty: newfailsregressions.");
