@@ -435,7 +435,6 @@ var displayPageList = function(res, data, makeRow, err, rows){
             var row = rows[i];
             console.log("===> row: ", row);
             var tableRow = {status: pageStatus(row), tableData: makeRow(row)};
-            // console.log("table: " + JSON.stringify(tableRow, null, '\t'));
             tableRows.push(tableRow);
         }
 
@@ -451,15 +450,11 @@ var displayPageList = function(res, data, makeRow, err, rows){
         hbs.registerHelper('nextUrl', function (urlPrefix, urlSuffix, page) {
             return urlPrefix + "/" + ( page + 1 ) + urlSuffix;
         });
-
-        //console.log("BEFORE THE res.render(...)");
-        //console.log("JSON: " + JSON.stringify(tableData, null, '\t'));
         res.render('table.html', tableData);
     }
 };
 
 var makeRegressionRow = function(row) {
-    //console.log("ROW: ", row);
     var output = [
         pageTitleData(row),
         commitLinkData(row.new_commit, row.title, row.prefix),
@@ -471,16 +466,15 @@ var makeRegressionRow = function(row) {
 };
 
 var pageTitleData = function(row){
-    // console.log("----");
-    // console.log("row.test", row.test);
-    // console.log("JSON.parse(row.test): ", JSON.parse(row.test));
-    // console.log("----");
-    // process.exit(0);
-    //var parsed = JSON.parse( JSON.stringify(row.test) );
+    //The try catch is a hack and not a real solution.
+    //gitissue #43 was made to address this this hack and explains the problem and why this hack "works"
+    //This hack should eventually be fixed with a real solution.
     try{
         var parsed = JSON.parse( row.test );
     }catch (e) {
-        var parsed =JSON.parse(row.test.replace(/\"\"/g, '"'));
+        //other regex that could work: 
+        //var parsed = JSON.parse(data[x][0].toString().replace(/\"\"\(.*)\"\"/g, /\"\'$1\'\"/)
+        var parsed = JSON.parse(row.test.replace(/\"\"/g, '"'));
     }
     var prefix = encodeURIComponent( parsed.prefix ),
     title = encodeURIComponent( parsed.title );

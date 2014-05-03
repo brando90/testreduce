@@ -812,29 +812,15 @@ function calcRegressionFixes(r1, r2, cb) {
             console.log("firstResults.length: ", firstResults.length);
             console.log("data.length: ", data.length);
             for(var y in firstResults) {
-                //console.log("result: " + firstResults[y][0].toString());
                 for(var x in data) {
                     if(data[x][0].toString() === firstResults[y][0].toString()) {
-                      // var ret = {
-                      //     first: firstResults[y],
-                      //     second: data[x]
-                      // };
-                      // console.log("ret: " + JSON.stringify(ret, null,'\t'));
                       var score1 = firstResults[y][1];
                       var score2 = data[x][1];
                       var test = data[x][0].toString();
-                      //var test = JSON.stringify(data[x][0]);
-                      // console.log(typeof data[x][0]);
-                      // console.log("data[x][0]: ", data[x][0]);
-                      // console.log("data[x][0].toString(): ", data[x][0].toString());
-                      // console.log( "JSON.string(data[x][0]): ", JSON.stringify(data[x][0]) );
-                      // console.log( "JSON.string(data[x][0]): ", JSON.parse( data[x][0].toString() ) );
-                      // process.exit(0);
                       if(score1< score2) fixData.push(regressionHelper(test, score1, score2));
                       else if (score1 > score2) regData.push(regressionHelper(test, score1, score2));
                     }
                 };
-                //console.log("y: " + JSON.stringify(firstResults[y],null, '\t'))
             }
             cb(null, regData, fixData);
         }
@@ -863,7 +849,6 @@ CassandraBackend.prototype.getRegressions = function (r1, r2, prefix, page, cb) 
     var calc = calcRegressionFixes.bind(this);
     calc(r1, r2, function (err, reg, fix) {
         if (err) return cb(err);
-        //return console.log("regressions: " +JSON.stringify(regressions,null,'\t'));
         async.sortBy(reg, function(item, callback) {
             callback(null, item.score2 - item.score1);
         }, function(err, regressions) {
@@ -884,9 +869,6 @@ CassandraBackend.prototype.getRegressions = function (r1, r2, prefix, page, cb) 
                 regressions[i].old_commit = r2;
                 regressions[i].new_commit = r1;
             }
-
-            
-            //console.log("json: " + JSON.stringify(regressions, null, '\t'));
 
             cb(null, regressions, mydata);
         });
@@ -991,7 +973,9 @@ CassandraBackend.prototype.getOneDiffRegressions = function(commit1, commit2, nu
     });
 }
 
-/*  WHERE s1.commit_hash = ? AND s2.commit_hash = ? 
+/*  
+    This comment shows the condition obtained from the parsoid code:
+    WHERE s1.commit_hash = ? AND s2.commit_hash = ? 
     AND s1.score > s2.score
     AND s2.fails = 0 AND s1.fails > 0
     // exclude cases introducing exactly one skip/fail to a perfect
@@ -1024,7 +1008,6 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
                 if ( isNewFail(dataObj) ){
                     collectedReg.push(dataObj);
                 }
-                //console.log(":::> ROW: ", JSON.parse(collectedReg[0].test) );
             }
             if(collectedReg.length == 0){
                 console.log("Error Empty: newfailsregressions.");
@@ -1038,32 +1021,7 @@ CassandraBackend.prototype.getNewFailsRegressions = function(commit1, commit2, c
             }
         }
     });
-}
-
-// CassandraBackend.prototype.callDBdebug = function(cql, args, cb){
-//     var cb = function(err, result){
-//         if (err){
-//             console.log("ERROR");
-//             console.log(err);
-//         }else{
-//             console.log("Insertion Done!");
-//         }
-//     };
-//     var cql = "insert into test_by_score (commit, delta, test, score) values (?, ?, ?, ?);";
-//     args1 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 28487];
-//     args2 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 192];
-//     args3 = [new Buffer('c1'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 10739];
-    
-//     args4 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Slonowice_railway_station\""}'), 10500];
-//     args5 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Salfoeld\""}'), 1050];
-//     args6 = [new Buffer('c2'), 0, new Buffer('{"prefix": "enwiki", "title": "\"Aghnadarragh\""}'), 100];
-//     this.client.execute(cql, args1, this.consistencies.write, cb);
-//     this.client.execute(cql, args2, this.consistencies.write, cb);
-//     this.client.execute(cql, args3, this.consistencies.write, cb);
-//     this.client.execute(cql, args4, this.consistencies.write, cb);
-//     this.client.execute(cql, args5, this.consistencies.write, cb);
-//     this.client.execute(cql, args6, this.consistencies.write, cb);
-// }
+}  
 
 // Node.js module exports. This defines what
 // require('./CassandraBackend.js'); evaluates to.
